@@ -36,23 +36,23 @@
 #define ROSCPP_ROS_H
 
 #include "ros/time.h"                           //Time class포함, 시간과 관련된 헤더파일
-#include "ros/rate.h"                           //Rate class포함, loop frequence와 관련된 헤더파일
+#include "ros/rate.h"                           //Rate class포함, loop frequency와 관련된 헤더파일
 #include "ros/console.h"                        //콘솔 출력과 로그에 관한 헤더파일
 #include "ros/assert.h"                         //assertion 관련 매크로에 관한 헤더파일
 
 #include "ros/common.h"                         //일반적인 정의, 매크로를 정의한 헤더파일
 #include "ros/types.h"                          //타입 정의, 선언과 ROS Messages의 데이터타입을 정의한 헤더파일
-#include "ros/node_handle.h"
-#include "ros/publisher.h"
-#include "ros/single_subscriber_publisher.h"
-#include "ros/service_server.h"
-#include "ros/subscriber.h"
-#include "ros/service.h"
-#include "ros/init.h"
-#include "ros/master.h"
-#include "ros/this_node.h"
-#include "ros/param.h"
-#include "ros/topic.h"
-#include "ros/names.h"
+#include "ros/node_handle.h"                    //노드 간 통신과 관련된 헤더파일
+#include "ros/publisher.h"                      //Publisher의 생성과 관리를 담당하는 헤더파일
+#include "ros/single_subscriber_publisher.h"    //단일 Subscriber - Publisher일 때를 메커니즘을 관리하는 헤더파일
+#include "ros/service_server.h"                 //Service server생성에 관련된 헤더파일
+#include "ros/subscriber.h"                     //Subscriber 생성, 관리에 관련된 헤더파일
+#include "ros/service.h"                        //ROS Service의 기본 헤더파일
+#include "ros/init.h"                           //ROS 환경의 실행에 관련된 함수, 매크로를 포함한 헤더파일
+#include "ros/master.h"                         //ROS Master와의 상호작용에 관련된 헤더파일
+#include "ros/this_node.h"                      //현재 노드의 정보와 관련된 함수나 클래스를 정의한 헤더파일
+#include "ros/param.h"                          //ROS parameter의 접근, 관리하는 함수를 정의한 헤더파일
+#include "ros/topic.h"                          //Publisher-Subscriber사이 주고받는 정보인 topic에 관한 헤더파일
+#include "ros/names.h"                          //ROS 이름에 관한 헤더파일. 각 엔티티는 계층적인 식별자를 가짐
 
 #endif
