@@ -1,2 +1,5 @@
 # vscode
 .vscode/
+
+# etc
+.catkin_workspace
