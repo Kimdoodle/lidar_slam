@@ -31,6 +31,10 @@
  *
  */
 
+/*
+ *  LiDAR센서 SDK의 버전을 표기한 헤더파일.
+ *  sl_lidar_driver.h 드라이버 헤더파일을 포함함.
+ */
 #pragma once
 
 #include "sl_lidar_driver.h"
