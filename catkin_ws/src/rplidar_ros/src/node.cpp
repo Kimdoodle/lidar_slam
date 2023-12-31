@@ -37,11 +37,15 @@
 #include "std_srvs/Empty.h"
 #include "sl_lidar.h" 
 
+//배열 크기를 계산하는 매크로
 #ifndef _countof
 #define _countof(_Array) (int)(sizeof(_Array) / sizeof(_Array[0]))
 #endif
 
+//각도-라디안 변환 매크로
 #define DEG2RAD(x) ((x)*M_PI/180.)
+
+//기본 timeout 시간(초) 설정
 #define RESET_TIMEOUT 15 // 15 second
 
 enum {
@@ -51,8 +55,10 @@ enum {
 };
 using namespace sl;
 
+//드라이버 선언
 ILidarDriver * drv = NULL;
 
+//스캔 데이터를 ROS메세지로 변환 후 publish하는 함수
 void publish_scan(ros::Publisher *pub,
                   sl_lidar_response_measurement_node_hq_t *nodes,
                   size_t node_count, ros::Time start,
@@ -62,12 +68,13 @@ void publish_scan(ros::Publisher *pub,
                   std::string frame_id)
 {
     static int scan_count = 0;
-    sensor_msgs::LaserScan scan_msg;
+    sensor_msgs::LaserScan scan_msg; //메세지 데이터 선언
 
-    scan_msg.header.stamp = start;
+    scan_msg.header.stamp = start;  //메세지 timestamp 설정
     scan_msg.header.frame_id = frame_id;
     scan_count++;
     
+    //메세지 angle data설정
     bool reversed = (angle_max > angle_min);
     if ( reversed ) {
       scan_msg.angle_min =  M_PI - angle_max;
@@ -79,6 +86,7 @@ void publish_scan(ros::Publisher *pub,
     scan_msg.angle_increment =
         (scan_msg.angle_max - scan_msg.angle_min) / (double)(node_count-1);
 
+    //메세지 scan time 설정
     scan_msg.scan_time = scan_time;
     scan_msg.time_increment = scan_time / (double)(node_count-1);
     scan_msg.range_min = 0.15;
@@ -107,9 +115,11 @@ void publish_scan(ros::Publisher *pub,
         }
     }
 
+    //메세지 publish
     pub->publish(scan_msg);
 }
 
+//RiDAR 센서의 기기 정보를 반환하는 함수
 bool getRPLIDARDeviceInfo(ILidarDriver * drv)
 {
     sl_result     op_result;
@@ -147,6 +157,7 @@ bool getRPLIDARDeviceInfo(ILidarDriver * drv)
     return true;
 }
 
+//RiDAR 센서를 초기화하는 함수
 bool resetRPLIDAR(ILidarDriver * drv)
 {
     sl_result     op_result;
@@ -159,6 +170,7 @@ bool resetRPLIDAR(ILidarDriver * drv)
     }
 }
 
+//RiDAR 센서의 Health정보(정상 작동여부)를 확인하는 함수
 bool checkRPLIDARHealth(ILidarDriver * drv)
 {
     sl_result     op_result;
@@ -187,6 +199,7 @@ bool checkRPLIDARHealth(ILidarDriver * drv)
     }
 }
 
+//센서의 모터를 멈추는 함수
 bool stop_motor(std_srvs::Empty::Request &req,
                                std_srvs::Empty::Response &res)
 {
@@ -198,6 +211,7 @@ bool stop_motor(std_srvs::Empty::Request &req,
   return true;
 }
 
+//센서의 모터를 작동하는 함수
 bool start_motor(std_srvs::Empty::Request &req,
                                std_srvs::Empty::Response &res)
 {
@@ -214,31 +228,34 @@ bool start_motor(std_srvs::Empty::Request &req,
   return true;
 }
 
+//해당 노드의 각도를 0~90으로 변환하여 반환하는 함수
 static float getAngle(const sl_lidar_response_measurement_node_hq_t& node)
 {
     return node.angle_z_q14 * 90.f / 16384.f;
 }
 
+//main
 int main(int argc, char * argv[]) {
     ros::init(argc, argv, "rplidar_node");
     
-    std::string channel_type;
-    std::string tcp_ip;
-    int tcp_port = 20108;
-    std::string udp_ip;
-    int udp_port = 8089;
-    std::string serial_port;    
-    int serial_baudrate = 115200;
-    std::string frame_id;
-    bool inverted = false;
-    bool initial_reset = false;
+    std::string channel_type;   //채널 타입
+    std::string tcp_ip;         //TCP IP주소
+    int tcp_port = 20108;       //TCP 포트번호
+    std::string udp_ip;         //UDP IP주소
+    int udp_port = 8089;        //UDP 포트번호
+    std::string serial_port;    //serial port
+    int serial_baudrate = 115200;   //baudrate지정
+    std::string frame_id;           //frame_id
+    bool inverted = false;          //역방향 회전 여부
+    bool initial_reset = false;     //초기 초기화여부
     bool angle_compensate = true;    
     float angle_compensate_multiple = 1.0;//min 360 ponits at per 1 degree
     int points_per_circle = 360;//min 360 ponits at per circle 
-    std::string scan_mode;
-    float max_distance;
-    double scan_frequency;
-    ros::NodeHandle nh;
+    std::string scan_mode;          //스캔 모드
+    float max_distance;             //최대 거리
+    double scan_frequency;          //스캔 빈도(frequency)
+
+    ros::NodeHandle nh;             //node Handle - global node시작 여부를 고려
     ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 1000);
     ros::NodeHandle nh_private("~");
     nh_private.param<std::string>("channel_type", channel_type, "serial");
@@ -267,8 +284,10 @@ int main(int argc, char * argv[]) {
 
     sl_result  op_result;
 
-    // create the driver instance
+    //드라이버 인스턴스
     drv = *createLidarDriver();
+    
+    //채널 연결
     IChannel* _channel;
     if(channel_type == "tcp"){
         _channel = *createTcpChannel(tcp_ip, tcp_port);
@@ -292,7 +311,8 @@ int main(int argc, char * argv[]) {
         delete drv;
         return -1;
     }
-    // get rplidar device info
+    
+    //기기 정보 확인
     if(!getRPLIDARDeviceInfo(drv)){
        delete drv;
        return -1;
@@ -333,16 +353,16 @@ int main(int argc, char * argv[]) {
     if( (devinfo.model>>4) > LIDAR_S_SERIES_MINUM_MAJOR_ID){
         scan_frequency_tunning_after_scan = true;
     }
-    //two service for start/stop lidar rotate
+    //시작/종료 서비스 서버 생성
     ros::ServiceServer stop_motor_service = nh.advertiseService("stop_motor", stop_motor);
     ros::ServiceServer start_motor_service = nh.advertiseService("start_motor", start_motor);
 
-    if(!scan_frequency_tunning_after_scan){ //for RPLIDAR A serials
+    if(!scan_frequency_tunning_after_scan){ //A시리즈 전용 설정
        //start RPLIDAR A serials  rotate by pwm
         drv->setMotorSpeed(600);     
     }
 
-
+    //스캔 모드 설정
     LidarScanMode current_scan_mode;
     if (scan_mode.empty()) {
         op_result = drv->startScan(false /* not force scan */, true /* use typical scan mode */, 0, &current_scan_mode);
@@ -387,11 +407,12 @@ int main(int argc, char * argv[]) {
         ROS_ERROR("Can not start scan: %08x!", op_result);
     }
 
+    //시작시간, 종료시간, 지속시간 정의
     ros::Time start_scan_time;
     ros::Time end_scan_time;
     double scan_duration;
 
-    
+    //정상작동 하에 스캔 반복
     while (ros::ok()) {
         sl_lidar_response_measurement_node_hq_t nodes[8192];
         size_t   count = _countof(nodes);
@@ -470,7 +491,7 @@ int main(int argc, char * argv[]) {
         ros::spinOnce();
     }
 
-    // done!
+    //종료
     drv->setMotorSpeed(0);
     drv->stop();
     delete drv;
