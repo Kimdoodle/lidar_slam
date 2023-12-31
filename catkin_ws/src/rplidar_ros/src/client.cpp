@@ -38,8 +38,10 @@
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 
+//라디안 - 각도 변환 매크로
 #define RAD2DEG(x) ((x)*180./M_PI)
 
+//메세지 수신 시 스캔 정보를 추출하는 함수
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
 {
     int count = scan->scan_time / scan->time_increment;
@@ -52,6 +54,7 @@ void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
     }
 }
 
+//main
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "rplidar_node_client");
