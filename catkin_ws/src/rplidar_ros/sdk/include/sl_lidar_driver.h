@@ -29,6 +29,130 @@
   *
   */
 
+/*
+ *  LiDAR 센서 드라이버 헤더파일.
+ *      - namespace sl을 사용한다.
+ *
+ *  1. LidarScanMode 구조체
+ *      - sl_u16타입의 모드 ID
+ *      - sl_u18타입의 answer타입 ID
+ *      - float타입의 측정 간격(us_per_sample), 최대거리(max_distance)
+ *      - char[]의 scan_mode 스캔 모드 이름
+ *
+ *  2. Result 구조체: 정상작동여부나 오류코드 확인용
+ *      - sl_result(unsigned int) 타입의 error코드
+ *      - 코드에 대한 value값
+ *      - 정상작동이면 err값을 SL_RESULT_OK로 설정(생성자)
+ *      - 오류라면 오류 코드를 err값으로 설정(생성자)
+ *      - Conversion operator를 통해 bool값이나 sl_result로 변환이 가능함
+ *      - operator를 통해 value값이나 내부 원소에 접근이 가능함
+ *
+ *  3. ENUM
+ *      - LIDARTechnologyType: LiDAR센서의 작동방식을 지정한 enum.
+ *      - LIDARMajorType: LiDAR센서의 모델명을 지정한 enum.
+ *      - LIDARInterfaceType: LiDAR센서의 연결방식을 지정한 enum.
+ *      - MotorCtrlSupport: 모터를 제어하는 방식을 지정한 enum.
+ *      - ChannelType: 연결된 채널의 방식을 지정한 enum.
+ *
+ *  4. SlamtecLidarTimingDesc 구조체
+ *      - Timing과 관련된 정보를 포함
+ *      - sample_duration_uS: 샘플 지속시간, 마이크로초 단위
+ *      - native_baudrate: 기본 보드레이트
+ *      - linkage_delay_uS: 연결지연시간, 마이크로초 단위
+ *      - native_interface_type: 연결방식, enum
+ *      - native_timestamp_support: timestamp포함 여부, bool
+ *
+ *  5. IChannel 클래스: 연결 채널(communication channel)의 추상 인터페이스
+ *      - open(): 연결 수립. 성공 시 true반환
+ *      - close(): 연결 종료
+ *      - flush(): 모든 데이터를 remote endpoint로 전송
+ *      - waitForData(size, timeoutInMs, actualReady)
+ *        : timeoutInMs시간 내 size크기의 데이터를 기다리는 함수.
+ *          수신 시 actualReady에 저장함
+ *      - waitForDataExt(size_hint, timeoutInMs)
+ *        : size_hint크기의 데이터가 수신 가능해질때까지 timeoutInMs동안 대기.
+ *      - write(data, size): size크기의 data를 endpoint로 전송, 성공한 바이트 수 반환.
+ *      - read(buffer, size): size크기의 data를 buffer에 저장, 성공한 바이트 수 반환.
+ *      - clearReadCache(): read Cache를 초기화하는 함수.
+ *      - getChannelType(): 채널의 타입을 반환하는 함수
+ *
+ *     ISerialPortChannel 클래스: 시리얼 포트(serial port)통신 특화 클래스.
+ *      - IChannel클래스를 상속함.
+ *      - setDTR(dtr): 시리얼 포트 통신에서 사용되는 제어 신호 DTR를 설정/해제하는데 사용함
+ *
+ *     createSerialPortChannel(device, baudrate)
+ *      - 기기의 포트 정보(device)와 baudrate로 연결을 수립하는 함수
+ *     createTcpChannel(ip, port)
+ *      - ip주소와 port번호로 TCP 연결을 수립하는 함수
+ *     createUdpChannel(ip, port)
+ *      - ip주소와 port번호로 UDP 연결을 수립하는 함수
+ *
+ *  6. LidarMotorInfo 구조체
+ *      - motorCtrlSupport: 지원되는 모터 제어방식, enum
+ *      - desired_speed: 모터의 희망 속도를 설정, sl_u16타입
+ *      - max_speed: 모터의 최대 속도를 설정, sl_u16타입
+ *      - min_speed: 모터의 최소 속도를 설정, sl_u16타입
+ *
+ *  7. ILidarDriver 클래스
+ *      - LiDAR센서와 상호작용하기위한 클래스
+ *      - connect(channel): 수립된 채널을 매개변수로 센서와 연결
+ *      - disconnect(): 연결 해제
+ *      - isConnected(): 연결 여부 확인, bool값 반환
+ *
+ *      - reset(timeoutInMs): 시스템 초기화
+ *      - getAllSupportedScanModes(outModes, timeoutInMs): 지원하는 스캔 모드 반환
+ *      - getTypicalScanMode(outMode, timeoutInMs): 일반적인 스캔 모드 반환
+ *
+ *      - startScan(force, useTypicalScan, options, outUsedScanMode): 스캔 시작
+ *      - startScanExpress(force, scanMode, options, outUsedScanMode, timeout)
+ *        : 특정 모드로 스캔 시작
+ *      - getHealth(health, timeout): LiDAR센서의 self-protection mode여부 확인
+ *      - getDeviceInfo(info, timeout): LiDAR센서의 장치 정보 반환
+ *      - checkMotorCtrlSupport(motorCtrlSupport, timeout): 특정 모터제어 방식 지원여부 확인
+ *      - getFrequency(scanMode, nodes, count, frequency): 주어진 data로 frequency계산
+ *      - setLidarIpConf(conf, timeout): LPX, S2E시리즈 센서의 고정 IP주소 설정
+ *      - getLidarIpConf(conf, timeout): LPX, S2E시리즈 센서의 고정 IP주소 반환
+ *      - getDeviceMacAddr(macAddrArray, timeoutInMs): 센서의 MAC주소 반환
+ *      - stop(timeout): 대기상태로 전환
+ *      - grabScanDataHq(nodebuffer, count, timeout): 이전에 수신한 완전한 스캔 데이터 대기
+ *      - gradScanDataHqWithTimeStamp(nodebuffer, count, timestamp_uS, timeout)
+ *        : timeStamp를 포함하여 이전에 수신한 완전한 스캔 데이터 대기
+ *      - ascendScanData(nodebuffer, count): 스캔 데이터를 각도 값에 따라 정렬
+ *      - getScanDataWithIntervalHq(nodebuffer, count): 완전한 데이터 여부에 상관없이 스캔 포인트 반환
+ *      - setMotorSpeed(speed): 모터 속도 설정
+ *      - getMotorInfo(motorInfo, timeoutInMs): 속도 정보를 포함한 모터 정보 반환
+ *      - negotiateSerialBaudRate(requiredBaudRate, baudRateDetected): 새로운 baudrate사용 설정
+ *      - getLIDARTechnologyType(devInfo): 센서의 측정방법 정보 반환
+ *      - getLIDARMajorType(devInfo): 센서 모델의 시리즈 정보 반환
+ *      - getModeNameDescriptionString(out_description, fetchAliasName, devInfo, timeout)
+ *        : 센서의 모델명 정보 반환
+ *
+ *
+ *      드라이버 설정 예시 #######
+ *      Result<ISerialChannel*> channel = createSerialPortChannel("/dev/ttyUSB0", 115200);
+ *      assert((bool)channel);
+ *      assert(*channel);
+ *
+ *      auto lidar = createLidarDriver();
+ *      assert((bool)lidar);
+ *      assert(*lidar);
+ *
+ *      auto res = (*lidar)->connect(*channel);
+ *      assert(SL_IS_OK(res));
+ *
+ *      sl_lidar_response_device_info_t deviceInfo;
+ *      res = (*lidar)->getDeviceInfo(deviceInfo);
+ *      assert(SL_IS_OK(res));
+ *
+ *      printf("Model: %d, Firmware Version: %d.%d, Hardware Version: %d\n",
+ *              deviceInfo.model,
+ *              deviceInfo.firmware_version >> 8, deviceInfo.firmware_version & 0xffu,
+ *              deviceInfo.hardware_version);
+ *
+ *      delete *lidar;
+ *      delete *channel;
+ */
+
 #pragma once
 
 #ifndef __cplusplus
@@ -55,7 +179,7 @@
 
 #include <string>
 
-namespace sl {
+    namespace sl {
 
 #ifdef DEPRECATED
 #define DEPRECATED_WARN(fn, replacement) do { \
