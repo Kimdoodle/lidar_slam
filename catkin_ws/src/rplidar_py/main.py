@@ -1,4 +1,5 @@
 from rplidar import RPLidar
+import scanLog
 import tkinter
 import graphics
 import time
@@ -27,6 +28,7 @@ def force_serial_close(port):
 
 def update_lidar_data():
     for i, scan in enumerate(lidar.iter_scans()):
+        scanLog.saveLog(scan)  # 로그 데이터 저장
         app.draw_lidar_data(scan)
         root.update_idletasks()
         root.update()
