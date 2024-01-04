@@ -1,5 +1,9 @@
 # vscode
 .vscode/
 
+# __pycache__
+__pycache__/
+*.py[cod]
+
 # etc
 .catkin_workspace
