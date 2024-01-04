@@ -1,12 +1,15 @@
-from rplidar import RPLidar
+try:
+    from rplidar import RPLidar
+    import serial
+    import fcntl
+except: pass
 import scanLog
 import tkinter
 import graphics
 import time
-import serial
 import sys
 import os
-import fcntl
+
 
 def is_serial_open(port):
     try:
@@ -28,19 +31,35 @@ def force_serial_close(port):
 
 def update_lidar_data():
     for i, scan in enumerate(lidar.iter_scans()):
-        scanLog.saveLog(scan)  # 로그 데이터 저장
+        #scanLog.saveLog(scan)  # 로그 데이터 저장
         app.draw_lidar_data(scan)
         root.update_idletasks()
         root.update()
 
+def debug_lidar_data():
+    logData = scanLog.loadLog()
+    i = 0
+    while True:
+        i = i % len(logData)
+        print(f'{i}: {logData[i][0]}')
+        app.draw_lidar_data(logData[i])
+        root.update_idletasks()
+        root.update()
+        i += 1
+        time.sleep(0.5)
 
 def on_closing():
-    lidar.stop()
-    lidar.stop_motor()
-    lidar.disconnect()
-    root.destroy()
+    try:
+        lidar.stop()
+        lidar.stop_motor()
+        lidar.disconnect()
+    except: pass
+    finally:
+        root.destroy()
 
 if __name__ == '__main__':
+    root = tkinter.Tk()
+    root.protocol("WM_DELETE_WINDOW", on_closing)
     try:
         serial_port = '/dev/ttyUSB0'
 
@@ -49,13 +68,12 @@ if __name__ == '__main__':
             force_serial_close(serial_port)
 
         lidar = RPLidar(serial_port, 256000)
-        root = tkinter.Tk()
-        root.protocol("WM_DELETE_WINDOW", on_closing)
+
         info = lidar.get_info()
-        print(info) 
+        #print(info) 
 
         health = lidar.get_health()
-        print(health)
+        #print(health)
 
         app = graphics.LidarVisualization(root)
         app.start_loading_bar()
@@ -66,5 +84,11 @@ if __name__ == '__main__':
         root.mainloop()
 
     except Exception as e:
-        print(f'Error! {e}')
-        on_closing()
+        print(e)
+        # 디버깅 모드
+        app = graphics.LidarVisualization(root)
+        root.after(1, debug_lidar_data)
+
+        root.mainloop()
+        
+        
