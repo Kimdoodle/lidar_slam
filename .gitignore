@@ -5,5 +5,7 @@
 __pycache__/
 *.py[cod]
 
+temp/
+
 # etc
 .catkin_workspace

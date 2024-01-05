@@ -4,7 +4,7 @@ from math import cos, sin, radians
 import random
 import threading
 
-DISTANCE_RATIO = 3000
+DISTANCE_RATIO = 10
 
 class LidarVisualization:
     def __init__(self, root):
@@ -45,8 +45,8 @@ class LidarVisualization:
             # print(f'angle: {angle}, distance: {distance}\n')
 
             # 좌표 계산
-            x = center_x + distance * center_x * sin(radians(angle)) / DISTANCE_RATIO
-            y = center_y - distance * center_y * cos(radians(angle)) / DISTANCE_RATIO
+            x = center_x + distance * sin(radians(angle)) / DISTANCE_RATIO
+            y = center_y - distance * cos(radians(angle)) / DISTANCE_RATIO
 
             # 각 데이터 
             self.canvas.create_rectangle(x - radius, y - radius, x + radius, y + radius, fill="blue")
