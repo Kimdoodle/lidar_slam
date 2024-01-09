@@ -6,12 +6,14 @@ from tkinter import ttk
 
 import mapdata
 
-MOVE_RATIO = 50
+DISTANCE_RATIO = 5  # 확대/축소
+MOVE_RATIO = 50     # 이동
+ROTATE_RATIO = 30   # 회전
+RADIUS = 5          # 점 하나의 반지름
 
 class LidarVisualization:
     def __init__(self, root):
         self.mapData = None
-        self.distance_ratio = 5
 
         self.root = root
         self.root.title("MAP")
@@ -26,25 +28,31 @@ class LidarVisualization:
         # 중심점 계산
         self.center_x = self.canvas.winfo_reqwidth() / 2
         self.center_y = self.canvas.winfo_reqheight() / 2
+        # 확대/축소
         self.canvas.bind("<Button-1>", self.increase_distance_ratio)
         self.canvas.bind("<Button-3>", self.decrease_distance_ratio)
+        # 이동
         self.root.bind("<Up>", self.on_arrow_key)
         self.root.bind("<Down>", self.on_arrow_key)
         self.root.bind("<Left>", self.on_arrow_key)
         self.root.bind("<Right>", self.on_arrow_key)
+        # 회전
+        self.rotate = 0
+        self.root.bind("q", self.rotate_left)
+        self.root.bind("e", self.rotate_right)
+
         self.canvas.pack()
 
     # 마우스 좌클릭/우클릭으로 확대/축소 조절
-    def increase_distance_rat절io(self, event):
-        self.distance_ratio += 3
-        print(self.distance_ratio)
+    def increase_distance_ratio(self, event):
+        global DISTANCE_RATIO
+        DISTANCE_RATIO += 3
         self.draw_lidar_data(None)
-
     def decrease_distance_ratio(self, event):
-        self.distance_ratio -= 3
-        if self.distance_ratio < 1:
-            self.distance_ratio = 1
-        print(self.distance_ratio)
+        global DISTANCE_RATIO
+        DISTANCE_RATIO -= 3
+        if DISTANCE_RATIO < 1:
+            DISTANCE_RATIO = 1
         self.draw_lidar_data(None)
 
     # 방향키로 중심점 조절
@@ -60,11 +68,15 @@ class LidarVisualization:
         elif key == 'Right':
             self.center_x -= MOVE_RATIO
 
-    # 로딩바 시작
+    # q, e 키입력으로 방향 조절
+    def rotate_left(self, event):
+        self.rotate += ROTATE_RATIO
+    def rotate_right(self, event):
+        self.rotate -= ROTATE_RATIO
+
+    # 로딩바 시작/멈춤
     def start_loading_bar(self):
         self.loading_bar.start()
-
-    # 로딩바 멈춤
     def stop_loading_bar(self):
         self.loading_bar.stop()
         self.loading_frame.grid_remove()
@@ -77,21 +89,21 @@ class LidarVisualization:
             mapData = self.mapData
         else:
             self.mapData = mapData
-        RADIUS = 5  # 점 하나의 반지름
 
         for lineInfo in mapData.lineInfo:
-            x1 = self.center_x + (lineInfo.startX - RADIUS) / self.distance_ratio
-            y1 = self.center_y + (lineInfo.startY - RADIUS) / self.distance_ratio
-            x2 = self.center_x + (lineInfo.endX + RADIUS) / self.distance_ratio
-            y2 = self.center_y + (lineInfo.endY + RADIUS) / self.distance_ratio
-            self.canvas.create_line(x1, y1, x2, y2, width=2, fill='red')
+            x1 = self.center_x + lineInfo.startX / DISTANCE_RATIO
+            y1 = self.center_y + lineInfo.startY / DISTANCE_RATIO
+            x2 = self.center_x + lineInfo.endX / DISTANCE_RATIO
+            y2 = self.center_y + lineInfo.endY  / DISTANCE_RATIO
+
+            self.canvas.create_line(self.rotate_cord(x1, y1), self.rotate_cord(x2, y2), width=2, fill='red')
 
         # # 점의 형태로 지도 생성
         # for index, cord in enumerate(mapData.cordInfo):
-        #     x1 = center_x + (cord.x - radius) / self.distance_ratio
-        #     y1 = center_y + (cord.y - radius) / self.distance_ratio
-        #     x2 = center_x + (cord.x + radius) / self.distance_ratio
-        #     y2 = center_y + (cord.y + radius) / self.distance_ratio
+        #     x1 = center_x + (cord.x - radius) / DISTANCE_RATIO
+        #     y1 = center_y + (cord.y - radius) / DISTANCE_RATIO
+        #     x2 = center_x + (cord.x + radius) / DISTANCE_RATIO
+        #     y2 = center_y + (cord.y + radius) / DISTANCE_RATIO
 
         #     self.canvas.create_rectangle(x1, y1, x2, y2, fill='black')
             
@@ -102,6 +114,18 @@ class LidarVisualization:
 
         # 중심점
         self.canvas.create_oval(self.center_x - RADIUS, self.center_y - RADIUS, self.center_x + RADIUS, self.center_y + RADIUS, fill="red")
+
+    # 좌표의 회전 계산
+    def rotate_cord(self, x,y):
+        # x' = xcos - ysin, y' = xsin + ycos
+        x = x - self.center_x
+        y = y - self.center_y
+        sin0 = sin(radians(self.rotate))
+        cos0 = cos(radians(self.rotate))
+        x2 = x*cos0 - y*sin0 + self.center_x
+        y2 = x*sin0 + y*cos0 + self.center_y
+        
+        return x2, y2
 
 if __name__ == '__main__':
     root = tk.Tk()
