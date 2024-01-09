@@ -1,15 +1,20 @@
 try:
-    from rplidar import RPLidar
-    import serial
     import fcntl
-except: pass
-import scanLog
-import tkinter
-import graphics
-import time
-import sys
-import os
 
+    import serial
+    from rplidar import RPLidar
+except: pass
+import os
+import sys
+import time
+import tkinter
+
+import graphics
+import mapdata
+import scandata
+import scanLog
+
+mapData = mapdata.Map()
 
 def is_serial_open(port):
     try:
@@ -32,21 +37,27 @@ def force_serial_close(port):
 def update_lidar_data():
     for i, scan in enumerate(lidar.iter_scans()):
         #scanLog.saveLog(scan)  # 로그 데이터 저장
-        app.draw_lidar_data(scan)
+        # update new data
+        data = scandata.Scan(scan)
+        mapData.update(data)
+
+        app.draw_lidar_data(mapData)
         root.update_idletasks()
         root.update()
 
 def debug_lidar_data():
-    logData = scanLog.loadLog()
+    logData = scanLog.loadScanLog()
     i = 0
     while True:
         i = i % len(logData)
         print(f'{i}: {logData[i][0]}')
-        app.draw_lidar_data(logData[i])
+        data = scandata.Scan(logData[i])
+        mapData.update(data)
+        app.draw_lidar_data(mapData)
         root.update_idletasks()
         root.update()
         i += 1
-        time.sleep(0.5)
+        time.sleep(0.3)
 
 def on_closing():
     try:
@@ -63,9 +74,9 @@ if __name__ == '__main__':
     try:
         serial_port = '/dev/ttyUSB0'
 
-        if is_serial_open(serial_port):
-            print(f"Serial port {serial_port} is open. Forcing close...")
-            force_serial_close(serial_port)
+        # if is_serial_open(serial_port):
+        #     print(f"Serial port {serial_port} is open. Forcing close...")
+        #     force_serial_close(serial_port)
 
         lidar = RPLidar(serial_port, 256000)
 
@@ -76,9 +87,7 @@ if __name__ == '__main__':
         #print(health)
 
         app = graphics.LidarVisualization(root)
-        app.start_loading_bar()
 
-        root.after(5000, app.stop_loading_bar)
         root.after(5001, update_lidar_data)
 
         root.mainloop()
