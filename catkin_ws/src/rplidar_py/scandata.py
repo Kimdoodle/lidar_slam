@@ -20,8 +20,9 @@ class Cord:
 
 # 선
 class Line:
-    def __init__(self, cordI, cordII):
-        # 점 인덱스 포함
+    def __init__(self, cordI, cordII, indexI, indexII):
+        self.sindex = indexI
+        self.eindex = indexII
         self.startX = cordI.x
         self.startY = cordI.y
         self.endX = cordII.x
@@ -90,7 +91,7 @@ class Scan:
             4. 두 점까지의 거리차
         '''
 
-        # 각 데이터의 75% 신뢰구간 기준값을 계산
+        # 각 데이터의 95% 신뢰구간 기준값을 계산
         angleMin, angleMax = self.check95(self.angleMean, self.angleStd)
         distMin, distMax = self.check95(self.distMean, self.distStd)
         interMin, interMax = self.check95(self.interMean, self.interStd)
@@ -98,8 +99,10 @@ class Scan:
 
         i = 0
         start = self.cordInfo[i]
+        startIndex = i
         while True:
             end = self.cordInfo[i]
+            endIndex = i
             i2 = (i + 1) % self.length
             comp = self.cordInfo[i2]
 
@@ -112,7 +115,7 @@ class Scan:
             ]
 
             if False in check:
-                self.lineInfo.append(Line(start, end))
+                self.lineInfo.append(Line(start, end, startIndex, endIndex))
                 start = comp
 
             if i2 == 0: break

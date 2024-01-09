@@ -82,6 +82,18 @@ class LidarVisualization:
         self.loading_frame.grid_remove()
         self.draw_lidar_data([])
 
+    # 좌표의 회전 계산
+    def rotate_cord(self, x,y):
+        # x' = xcos - ysin, y' = xsin + ycos
+        x = x - self.center_x
+        y = y - self.center_y
+        sin0 = sin(radians(self.rotate))
+        cos0 = cos(radians(self.rotate))
+        x2 = x*cos0 - y*sin0 + self.center_x
+        y2 = x*sin0 + y*cos0 + self.center_y
+        
+        return x2, y2
+
     # 스캔 데이터를 지도에 표시
     def draw_lidar_data(self, mapData):
         self.canvas.delete("all")
@@ -114,18 +126,6 @@ class LidarVisualization:
 
         # 중심점
         self.canvas.create_oval(self.center_x - RADIUS, self.center_y - RADIUS, self.center_x + RADIUS, self.center_y + RADIUS, fill="red")
-
-    # 좌표의 회전 계산
-    def rotate_cord(self, x,y):
-        # x' = xcos - ysin, y' = xsin + ycos
-        x = x - self.center_x
-        y = y - self.center_y
-        sin0 = sin(radians(self.rotate))
-        cos0 = cos(radians(self.rotate))
-        x2 = x*cos0 - y*sin0 + self.center_x
-        y2 = x*sin0 + y*cos0 + self.center_y
-        
-        return x2, y2
 
 if __name__ == '__main__':
     root = tk.Tk()

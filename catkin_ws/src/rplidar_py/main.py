@@ -93,7 +93,7 @@ if __name__ == '__main__':
         root.mainloop()
 
     except Exception as e:
-        print(e)
+        #print(e)
         # 디버깅 모드
         app = graphics.LidarVisualization(root)
         root.after(1, debug_lidar_data)
