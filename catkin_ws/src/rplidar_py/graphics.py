@@ -21,8 +21,8 @@ class LidarVisualization:
         self.loading_frame = tk.Frame(root)
         self.loading_frame.pack(pady=10)
 
-        self.loading_bar = ttk.Progressbar(self.loading_frame, maximum=100, mode='determinate', length=200)
-        self.loading_bar.grid(row=0, column=0, padx=10)
+        # self.loading_bar = ttk.Progressbar(self.loading_frame, maximum=100, mode='determinate', length=200)
+        # self.loading_bar.grid(row=0, column=0, padx=10)
 
         self.canvas = tk.Canvas(root, width=root.winfo_screenwidth(), height=root.winfo_screenheight(), bg="white")
         # 중심점 계산
@@ -58,7 +58,6 @@ class LidarVisualization:
     # 방향키로 중심점 조절
     def on_arrow_key(self, event):
         key = event.keysym
-        print(f'Key Pressed!, {key}')
         if key == 'Up':
             self.center_y += MOVE_RATIO
         elif key == 'Down':
@@ -67,12 +66,15 @@ class LidarVisualization:
             self.center_x += MOVE_RATIO
         elif key == 'Right':
             self.center_x -= MOVE_RATIO
+        self.draw_lidar_data(None)
 
     # q, e 키입력으로 방향 조절
     def rotate_left(self, event):
         self.rotate += ROTATE_RATIO
+        self.draw_lidar_data(None)
     def rotate_right(self, event):
         self.rotate -= ROTATE_RATIO
+        self.draw_lidar_data(None)
 
     # 로딩바 시작/멈춤
     def start_loading_bar(self):
@@ -102,22 +104,25 @@ class LidarVisualization:
         else:
             self.mapData = mapData
 
-        for lineInfo in mapData.lineInfo:
-            x1 = self.center_x + lineInfo.startX / DISTANCE_RATIO
-            y1 = self.center_y + lineInfo.startY / DISTANCE_RATIO
-            x2 = self.center_x + lineInfo.endX / DISTANCE_RATIO
-            y2 = self.center_y + lineInfo.endY  / DISTANCE_RATIO
+        # for index, lineInfo in enumerate(mapData.lineInfo):
+        #     x1 = self.center_x + lineInfo.startX / DISTANCE_RATIO
+        #     y1 = self.center_y + lineInfo.startY / DISTANCE_RATIO
+        #     x2 = self.center_x + lineInfo.endX / DISTANCE_RATIO
+        #     y2 = self.center_y + lineInfo.endY  / DISTANCE_RATIO
 
-            self.canvas.create_line(self.rotate_cord(x1, y1), self.rotate_cord(x2, y2), width=2, fill='red')
+        #     self.canvas.create_line(self.rotate_cord(x1, y1), self.rotate_cord(x2, y2), width=2, fill='red')
+        #     # debug - 선마다 번호 표시
+        #     midpoint = ((self.rotate_cord(x1, y1)[0] + self.rotate_cord(x2, y2)[0]) / 2, (self.rotate_cord(x1, y1)[1] + self.rotate_cord(x2, y2)[1]) / 2)
+        #     self.canvas.create_text(midpoint, text=str(index))
 
-        # # 점의 형태로 지도 생성
-        # for index, cord in enumerate(mapData.cordInfo):
-        #     x1 = center_x + (cord.x - radius) / DISTANCE_RATIO
-        #     y1 = center_y + (cord.y - radius) / DISTANCE_RATIO
-        #     x2 = center_x + (cord.x + radius) / DISTANCE_RATIO
-        #     y2 = center_y + (cord.y + radius) / DISTANCE_RATIO
+        # 점의 형태로 지도 생성
+        for index, cord in enumerate(mapData.cordInfo):
+            x1 = self.center_x + (cord.x - RADIUS) / DISTANCE_RATIO
+            y1 = self.center_y + (cord.y - RADIUS) / DISTANCE_RATIO
+            x2 = self.center_x + (cord.x + RADIUS) / DISTANCE_RATIO
+            y2 = self.center_y + (cord.y + RADIUS) / DISTANCE_RATIO
 
-        #     self.canvas.create_rectangle(x1, y1, x2, y2, fill='black')
+            self.canvas.create_rectangle(x1, y1, x2, y2, fill='black')
             
         #     # 중심에 번호 표시
         #     center_x_text = (x1 + x2) / 2

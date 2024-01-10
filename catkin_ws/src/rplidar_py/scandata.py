@@ -1,5 +1,5 @@
 import time
-from math import cos, radians, sin
+from math import acos, cos, degrees, radians, sin
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,12 +15,32 @@ class Cord:
         self.x = self.distance * np.cos(np.radians(self.angle))
         self.y = self.distance * np.sin(np.radians(self.angle))
     
+    def updateCord(self, x, y):
+        self.x += x
+        self.y += y
+
     def toString(self):
         return(f'{self.quality}, {self.angle}, {self.distance}, {self.x}, {self.y}')
+    
+    # 대소비교
+    def __lt__(self, other):
+        return (self.x, self.y) < (other.x, other.y)
+    def __le__(self, other):
+        return (self.x, self.y) <= (other.x, other.y)
+    def __eq__(self, other):
+        return (self.x, self.y) == (other.x, other.y)
+    def __ne__(self, other):
+        return (self.x, self.y) != (other.x, other.y)
+    def __gt__(self, other):
+        return (self.x, self.y) > (other.x, other.y)
+    def __ge__(self, other):
+        return (self.x, self.y) >= (other.x, other.y)
 
 # 선
 class Line:
     def __init__(self, cordI, cordII, indexI, indexII):
+        self.cordI = cordI
+        self.cordII = cordII
         self.sindex = indexI
         self.eindex = indexII
         self.startX = cordI.x
@@ -41,8 +61,12 @@ class Scan:
         self.interInfo = [] # 각 점 사이의 거리차이
         self.funcInfo = []  # 두 점을 연결한 직선의 기울기
         self.lineInfo = []  # 완성된 직선 정보
+        self.simplifiedLineInfo = [] #
         self.calculate_data(data)
         self.makeLine()
+        self.lineLog = self.makeLog(self.lineInfo)   # 완성된 직선 정보의 로그
+        self.simplify()
+        self.simplifiedLineLog = self.makeLog(self.simplifiedLineInfo)
 
     # 초기 지도 데이터 분석
     def calculate_data(self, data):
@@ -120,6 +144,74 @@ class Scan:
 
             if i2 == 0: break
             i = i2
+    
+    # 스캔 데이터 단순화 - 직선 수를 줄임
+    '''
+        현재 테스트중인 항목
+        중심점과 직선이 이루는 각도를 계산
+        인접한 각도차를 비교하여 비슷하다면 직선을 합침
+    '''
+    def simplify(self):
+        log = self.lineLog
+        mean = np.mean(np.array(log))
+        std = np.std(np.array(log))
+        max = mean + 1.96 * std
+        min = mean - 1.96 * std
+        print(f'직선 정보의 평균: {mean}, 표준편차: {std}')
+
+        ratioList = []
+        index = 0
+        angle = log[index]
+        while True:
+            if angle == 0: angle = 0.01
+            index = (index+1)%len(log)
+            angle2 = log[index]
+            ratioList.append(angle2/angle)
+            angle = angle2
+            if index == 0:
+                break
+
+        mean, std = self.removeOutlier(ratioList)
+        max = mean + 0.5 * std
+        min = mean - 0.5 * std
+        print(f'나눈 정보의 평균: {mean}, 표준편차: {std}')
+        print(f'범위: {min} to {max}')
+        #print(temp)
+        
+        try:
+            newLine_List = []
+            for index in range(len(self.lineInfo)):
+                if min <= ratioList[index] <= max:
+                    i2 = (index+1)%len(self.lineInfo)
+                    l1 = self.lineInfo[index]
+                    l2 = self.lineInfo[i2]
+                    newLine = Line(l1.cordI, l2.cordII, index, i2)
+                    newLine_List.append(newLine)
+            self.simplifiedLineInfo = newLine_List
+        except Exception as e:
+            print(e)
+
+
+    # 스캔 파일 로그화 - 각 직선과 직선중점 - 중심의 각도를 계산
+    def makeLog(self, lineInfo:list):
+        logList = []
+        try:
+            for line in lineInfo:
+                start = self.cordInfo[line.sindex]
+                end = self.cordInfo[line.eindex]
+                # start-end 직선의 거리
+                dSquare = (end.x-start.x)**2 + (end.y-start.y)**2
+                # 중심에서 각 점까지의 거리
+                d1 = self.cordInfo[line.sindex].distance
+                d2 = self.cordInfo[line.eindex].distance
+
+                angle_radian = acos((d1**2 + d2**2 - dSquare)/(2*d1*d2))
+                angle = degrees(angle_radian)
+                
+                logList.append(angle)
+            return logList
+        except Exception as e:
+            print(e)
 
     # 이상치 제거 후 평균, 표준편차 계산
     def removeOutlier(self, data:list):

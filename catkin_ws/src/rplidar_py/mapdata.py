@@ -1,4 +1,5 @@
 # 지도 정보 클래스
+import bisect
 import math
 
 import matplotlib.pyplot as plt
@@ -19,10 +20,11 @@ class Map:
         self.interInfo = []
         self.funcInfo = []
         self.lineInfo = []
-        self.position = (0,0) # 센서의 위치
+        self.position = (0,0,0) # 센서의 위치/각도
+        self.posLog = [] # 위치 로그
         self.scanLog = [] # 로그파일
     
-    # 새로운 스캔 데이터가 들어왔을 때 분석，업데이트
+    # 새로운 스캔 데이터가 입력되었을 때 분석，업데이트
     def update(self, scan:scandata.Scan):
         if self.new:
             self.cordInfo = scan.cordInfo
@@ -33,75 +35,33 @@ class Map:
             self.lineInfo = scan.lineInfo
             self.new = False
         else:
-            pass
-        
-        # 스캔 데이터 단순화
-        self.simplify(scan)
-        # 스캔 데이터를 로그에 저장
-        self.scanLog.append((scan, self.makeLog(scan)))
-
-    # 스캔 데이터 단순화 - 직선 수를 줄임
-    '''
-        
-    '''
-    def simplify(self, scan:scandata.Scan):
-        pass
-
-    # 스캔 파일 로그화 - 각 직선과 직선중점 - 중심의 각도를 중심으로.
-    def makeLog(self, scan:scandata.Scan):
-        logList = []
-        try:
-            for line in scan.lineInfo:
-                start = scan.cordInfo[line.sindex]
-                end = scan.cordInfo[line.eindex]
-                # start-end 직선의 거리
-                d = math.sqrt((end.x-start.x)**2 + (end.y-start.y)**2)
-                # 중심에서 각 점까지의 거리
-                d1 = scan.cordInfo[line.sindex].distance
-                d2 = scan.cordInfo[line.eindex].distance
-
-                angle_radian = math.acos((d1**2 + d2**2 - d**2)/(2*d1*d2))
-                angle = math.degrees(angle_radian)
-                
-                logList.append(angle)
-            print(logList)
-            #debug
-            mean = np.mean(np.array(logList))
-            std = np.std(np.array(logList))
-            max = mean + 1.96 * std
-            min = mean - 1.96 * std
-            print(f'직선 정보의 평균: {mean}, 표준편차: {std}')
-
-            temp = []
-            i = 0
-            angle = logList[i]
-            while True:
-                i = (i+1)%len(logList)
-                angle2 = logList[i]
-                temp.append(angle2/angle)
-                angle = angle2
-                if i == 0:
-                    mean, std = scan.removeOutlier(temp)
-                    max = mean + 0.5 * std
-                    min = mean - 0.5 * std
-                    print(f'나눈 정보의 평균: {mean}, 표준편차: {std}')
-                    print(f'범위: {min} to {max}')
-                    print(temp)
-                    break
+            # 위치 업데이트
+            self.posLog.append(self.position)
+            self.position = self.findSimiliar(scan)
             
-            return logList
-        except Exception as e:
-            print(e)
+            # 좌표 정보를 적합한 위치에 삽입
+            for cord in scan.cordInfo:
+                index = bisect.bisect_left(self.cordInfo, cord)
+                self.cordInfo.insert(index, cord)
+
 
 
     # 새로운 스캔 데이터와 유사한 로그 검색
     '''
-        
+        반환값은 추정되는 위치(+ 회전각도)
     '''
     def findSimiliar(self, scan:scandata.Scan):
-        pass
+        # Todo: 현재 디버깅을 위해 위치는 현재 position을 반환
+        estimatePos = self.position
+        # 중심점을 정한 후 좌표 갱신
+        for cord in scan.cordInfo:
+            cord.updateCord(estimatePos[0], estimatePos[1])
 
+        return estimatePos
 
+    # 초기화함수
+    def reset(self):
+        self.__init__()
 
 if __name__ == '__main__':
     logData = scanLog.loadScanLog()[0]

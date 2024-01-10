@@ -36,7 +36,7 @@ def force_serial_close(port):
 
 def update_lidar_data():
     for i, scan in enumerate(lidar.iter_scans()):
-        #scanLog.saveLog(scan)  # 로그 데이터 저장
+        # scanLog.saveScanLog(scan, i)  # 로그 데이터 저장
         # update new data
         data = scandata.Scan(scan)
         mapData.update(data)
@@ -44,6 +44,7 @@ def update_lidar_data():
         app.draw_lidar_data(mapData)
         root.update_idletasks()
         root.update()
+    print('good')
 
 def debug_lidar_data():
     logData = scanLog.loadScanLog()
@@ -81,7 +82,7 @@ if __name__ == '__main__':
         lidar = RPLidar(serial_port, 256000)
 
         info = lidar.get_info()
-        #print(info) 
+        #print(info)
 
         health = lidar.get_health()
         #print(health)
@@ -93,7 +94,7 @@ if __name__ == '__main__':
         root.mainloop()
 
     except Exception as e:
-        #print(e)
+        print(e)
         # 디버깅 모드
         app = graphics.LidarVisualization(root)
         root.after(1, debug_lidar_data)
