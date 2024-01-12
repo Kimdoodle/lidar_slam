@@ -33,32 +33,27 @@ def force_serial_close(port):
     except Exception as e:
         print(f"Error: {e}")
 
-
 def update_lidar_data():
     for i, scan in enumerate(lidar.iter_scans()):
-        # scanLog.saveScanLog(scan, i)  # 로그 데이터 저장
-        # update new data
-        data = scandata.Scan(scan)
+        data = scandata.Scan(scan, i)
+        # scanLog.saveScanLog(data)  # 로그 데이터 저장
         mapData.update(data)
 
         app.draw_lidar_data(mapData)
+        
         root.update_idletasks()
         root.update()
-    print('good')
 
 def debug_lidar_data():
-    logData = scanLog.loadScanLog()
-    i = 0
-    while True:
-        i = i % len(logData)
-        print(f'{i}: {logData[i][0]}')
-        data = scandata.Scan(logData[i])
+    logData = scanLog.loadScanLog("./catkin_ws/src/rplidar_py/log2")
+    mapData = mapdata.Map()
+    for index, log in enumerate(logData):
+        data = scandata.Scan(log, index)
         mapData.update(data)
         app.draw_lidar_data(mapData)
         root.update_idletasks()
         root.update()
-        i += 1
-        time.sleep(0.3)
+        time.sleep(5)
 
 def on_closing():
     try:
@@ -94,7 +89,7 @@ if __name__ == '__main__':
         root.mainloop()
 
     except Exception as e:
-        print(e)
+        #print(e)
         # 디버깅 모드
         app = graphics.LidarVisualization(root)
         root.after(1, debug_lidar_data)

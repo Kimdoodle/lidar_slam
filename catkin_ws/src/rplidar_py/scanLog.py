@@ -1,7 +1,7 @@
 import datetime
 import os
-
-import scandata
+import re
+import traceback
 
 
 def saveScanLog(data):
@@ -12,35 +12,37 @@ def saveScanLog(data):
 
         # 파일을 현재 디렉토리에 저장
         with open(filedirectory, 'w') as file:
-            for item in data:
-                file.write(','.join(map(str, data)))
+            for cord in data.cordInfo:
+                text = '('+', '.join(map(str, cord.toLog())) + ')\n'
+                file.write(text)
 
-        print(f"Scan data log successfully saved to {filename}")
+        print(f"Scan data log successfully saved to {filename}, data: {len(data.cordInfo)}")
     except Exception as e:
-        print(f"Error saving scan data log: {e}")
+        #print(f"Error saving scan data log: {e}")
+        traceback.print_exc()
 
 
-def loadScanLog() -> list:
+def loadScanLog(path="./catkin_ws/src/rplidar_py/log") -> list:
     try:
         # 파일 목록을 구성
-        path = "./catkin_ws/src/rplidar_py/log"
         fileList = os.listdir(path)
         
         # 파일 데이터 반환
         fileData = []
         for file in fileList:
             text = open(path + '/' + file, 'r').read()
-            eleList = text.split("),(")
-            eleList[0] = eleList[0][1:]
-            eleList[-1] = eleList[-1][:-1]
-            if eleList[-1][-1] == ')':
-                eleList[-1] = eleList[-1][:-1]
+            data = re.findall(r'\((.*?)\)', text)
+            # eleList = text.split("),(")
+            # eleList[0] = eleList[0][1:]
+            # eleList[-1] = eleList[-1][:-1]
+            # if eleList[-1][-1] == ')':
+            #     eleList[-1] = eleList[-1][:-1]
 
             # tuple List 형태로 저장
-            data_list = [tuple(map(float, item.split(','))) for item in eleList]
-            for data in data_list:
-                if(data[0] < 15):
-                    print(data)
+            data_list = [tuple(map(float, item.split(','))) for item in data]
+            # for data in data_list:
+            #     if(data[0] < 15):
+            #         print(data)
             fileData.append(data_list)
 
         return fileData

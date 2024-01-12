@@ -1,20 +1,25 @@
 # 지도 정보 클래스
 import bisect
 import math
+from collections import deque
 
 import matplotlib.pyplot as plt
 import numpy as np
 import scandata
 import scanLog
+from icp import best_fit_transform
+from scipy.interpolate import interp1d
 
 mapXSize = 5000
 mapYSize = 5000
+logSize = 100
 
 # 지도
 class Map:
     def __init__(self):
         self.new = True
         self.cordInfo = []
+        self.cordXY = []
         self.angleInfo = []
         self.distInfo = []
         self.interInfo = []
@@ -22,28 +27,58 @@ class Map:
         self.lineInfo = []
         self.position = (0,0,0) # 센서의 위치/각도
         self.posLog = [] # 위치 로그
-        self.scanLog = [] # 로그파일
+        self.scanLog = deque(maxlen=100)
     
     # 새로운 스캔 데이터가 입력되었을 때 분석，업데이트
     def update(self, scan:scandata.Scan):
         if self.new:
             self.cordInfo = scan.cordInfo
-            self.angleInfo = scan.angleInfo
-            self.distInfo = scan.distInfo
+            self.cordXY = scan.cordXY
+            # self.angleInfo = scan.angleInfo
+            # self.distInfo = scan.distInfo
             self.interInfo = scan.interInfo
-            self.funcInfo = scan.funcInfo
-            self.lineInfo = scan.lineInfo
+            # self.funcInfo = scan.funcInfo
+            # self.lineInfo = scan.lineInfo
+            self.scanLog.append(np.array(self.cordXY))
             self.new = False
         else:
-            # 위치 업데이트
-            self.posLog.append(self.position)
-            self.position = self.findSimiliar(scan)
+            # Todo: 위치 업데이트
+            #self.posLog.append(self.position)
+            #self.position = self.findSimiliar(scan)
             
-            # 좌표 정보를 적합한 위치에 삽입
-            for cord in scan.cordInfo:
-                index = bisect.bisect_left(self.cordInfo, cord)
-                self.cordInfo.insert(index, cord)
+            # icp알고리즘 적용, 지도 데이터 갱신
+            # 스캔 데이터 수가 다를 경우 보간
+            logScan = self.scanLog[-1]
+            newScan = self.matchSize(scan)
 
+            result = best_fit_transform(newScan, logScan)
+            T, R, t = result
+
+            # 매핑
+            result2 = np.dot(T, np.vstack((newScan.T, np.ones((1, newScan.shape[0])))))
+
+            # 지도 데이터 갱신
+            # print(f'addData: {result2.T[:, :2]}')
+            self.cordInfo.extend(result2.T[:, :2])
+
+            # 로그에 추가
+            self.scanLog.append(result2)
+
+    # 스캔 데이터를 (x,y)의 리스트로 변경
+    def transform(self, data):
+        return data.cordXY
+    
+    # 스캔 데이터 수가 다른 경우 보간
+    def matchSize(self, data):
+        length = len(self.scanLog[-1])
+        x_values, y_values = zip(*self.scanLog[-1])
+
+        int_function = interp1d(x_values, y_values, kind='linear', fill_value='extrapolate')
+
+        int_x = np.linspace(min(x_values), max(x_values), length)
+        int_y = int_function(int_x)
+
+        return np.array(list(zip(int_x, int_y)))
 
 
     # 새로운 스캔 데이터와 유사한 로그 검색
@@ -55,9 +90,13 @@ class Map:
         estimatePos = self.position
         # 중심점을 정한 후 좌표 갱신
         for cord in scan.cordInfo:
-            cord.updateCord(estimatePos[0], estimatePos[1])
+            cord.move_xy(estimatePos[0], estimatePos[1])
 
         return estimatePos
+
+    # 로그 갱신 - 최대 크기 유지
+    def addLog(self, data):
+        self.scanLog.append(data)
 
     # 초기화함수
     def reset(self):

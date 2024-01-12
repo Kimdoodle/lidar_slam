@@ -97,7 +97,7 @@ class LidarVisualization:
         return x2, y2
 
     # 스캔 데이터를 지도에 표시
-    def draw_lidar_data(self, mapData):
+    def draw_lidar_data(self, mapData, color='black'):
         self.canvas.delete("all")
         if mapData == None:
             mapData = self.mapData
@@ -117,12 +117,20 @@ class LidarVisualization:
 
         # 점의 형태로 지도 생성
         for index, cord in enumerate(mapData.cordInfo):
-            x1 = self.center_x + (cord.x - RADIUS) / DISTANCE_RATIO
-            y1 = self.center_y + (cord.y - RADIUS) / DISTANCE_RATIO
-            x2 = self.center_x + (cord.x + RADIUS) / DISTANCE_RATIO
-            y2 = self.center_y + (cord.y + RADIUS) / DISTANCE_RATIO
+            try:
+                x1 = self.center_x + (cord.x - RADIUS) / DISTANCE_RATIO
+                y1 = self.center_y + (cord.y - RADIUS) / DISTANCE_RATIO
+                x2 = self.center_x + (cord.x + RADIUS) / DISTANCE_RATIO
+                y2 = self.center_y + (cord.y + RADIUS) / DISTANCE_RATIO
 
-            self.canvas.create_rectangle(x1, y1, x2, y2, fill='black')
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill=color)
+            except Exception as e:
+                x1 = self.center_x + (cord[0] - RADIUS) / DISTANCE_RATIO
+                y1 = self.center_y + (cord[1] - RADIUS) / DISTANCE_RATIO
+                x2 = self.center_x + (cord[0] + RADIUS) / DISTANCE_RATIO
+                y2 = self.center_y + (cord[1] + RADIUS) / DISTANCE_RATIO
+
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill=color)
             
         #     # 중심에 번호 표시
         #     center_x_text = (x1 + x2) / 2
@@ -136,8 +144,6 @@ if __name__ == '__main__':
     root = tk.Tk()
 
     app = LidarVisualization(root)
-    app.start_loading_bar()
-    root.after(5000, app.stop_loading_bar)
 
     root.mainloop()
 
