@@ -1,3 +1,4 @@
+# FOR DEBUG - Logfile save/load
 import datetime
 import os
 import re
@@ -25,18 +26,13 @@ def saveScanLog(data):
 def loadScanLog(path="./catkin_ws/src/rplidar_py/log") -> list:
     try:
         # 파일 목록을 구성
-        fileList = os.listdir(path)
+        fileList = sorted(os.listdir(path))
         
         # 파일 데이터 반환
         fileData = []
         for file in fileList:
             text = open(path + '/' + file, 'r').read()
             data = re.findall(r'\((.*?)\)', text)
-            # eleList = text.split("),(")
-            # eleList[0] = eleList[0][1:]
-            # eleList[-1] = eleList[-1][:-1]
-            # if eleList[-1][-1] == ')':
-            #     eleList[-1] = eleList[-1][:-1]
 
             # tuple List 형태로 저장
             data_list = [tuple(map(float, item.split(','))) for item in data]
@@ -45,7 +41,7 @@ def loadScanLog(path="./catkin_ws/src/rplidar_py/log") -> list:
             #         print(data)
             fileData.append(data_list)
 
-        return fileData
+        return fileList, fileData
     except Exception as e:
         print(e)
 
