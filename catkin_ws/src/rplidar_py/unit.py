@@ -7,15 +7,15 @@ import numpy as np
 # 좌표
 class Cord:
     def __init__(self, data):
-        self.quality = data[0]
-        self.angle = data[1]
-        self.distance = data[2]
-        self.x = self.distance * np.cos(np.radians(self.angle))
-        self.y = self.distance * np.sin(np.radians(self.angle))
-    
-    def move_xy(self, x, y):
-        self.x += x
-        self.y += y
+        if len(data) == 3:
+            self.quality = data[0]
+            self.angle = data[1]
+            self.distance = data[2]
+            self.x = self.distance * np.cos(np.radians(self.angle))
+            self.y = self.distance * np.sin(np.radians(self.angle))
+        elif len(data) == 2:
+            self.x = data[0]
+            self.y = data[1]
 
     def move_angle(self, angle):
         sin0 = sin(radians(angle))
@@ -54,7 +54,7 @@ def rotate_cord(x, y, angle):
 
 # 선
 class Line:
-    def __init__(self, cordI, cordII, indexI, indexII):
+    def __init__(self, cordI:Cord, cordII:Cord, indexI:int, indexII:int):
         self.cordI = cordI
         self.cordII = cordII
         self.sindex = indexI

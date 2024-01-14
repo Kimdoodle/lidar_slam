@@ -134,9 +134,6 @@ def check(cord1, cord2):
 
     return mean
 
-''''''
-def test(cord1, cord2):
-    pass
 
 # 각 스캔 데이터의 특징을 추출하는 함수
 # 각 점의 거리 확률분포를 계산하여 값이 큰 요소를 특징으로 설정.
