@@ -122,27 +122,14 @@ def modeChange():
     MODE = radio_var.get()
     draw_lidar_data()
 
-# def draw_0():
-#     global MODE
-#     if MODE == 'dot':
-#         # 점의 형태로 지도 생성
-#         for index, cord in enumerate(mapData.cordInfo):
-#             x1 = CENTER_X + (cord.x - RADIUS) / DISTANCE_RATIO
-#             y1 = CENTER_Y + (cord.y - RADIUS) / DISTANCE_RATIO
-#             x2 = CENTER_X + (cord.x + RADIUS) / DISTANCE_RATIO
-#             y2 = CENTER_Y + (cord.y + RADIUS) / DISTANCE_RATIO
-#             canvas.create_rectangle(x1, y1, x2, y2, fill='black')
-#     elif MODE == 'line':
-#         # 선의 형태로 지도 생성
-#         for index, lineInfo in enumerate(mapData.lineInfo):
-#             x1 = CENTER_X + lineInfo.startX / DISTANCE_RATIO + MOVE_X
-#             y1 = CENTER_Y + lineInfo.startY / DISTANCE_RATIO + MOVE_Y
-#             x2 = CENTER_X + lineInfo.endX / DISTANCE_RATIO + MOVE_X
-#             y2 = CENTER_Y + lineInfo.endY / DISTANCE_RATIO + MOVE_Y
-#             newCord1 = rotate_cord(x1, y1)
-#             newCord2 = rotate_cord(x2, y2)
-
-#             canvas.create_line(newCord1, newCord2, width=2, fill="black")
+# 번호 표시 변경
+def numberChange():
+    global printNumber
+    if printNumber.get() == 0:
+        printNumber.set(1)
+    else:
+        printNumber.set(0)
+    draw_lidar_data()
 
 # 스캔 데이터를 지도에 표시
 '''
@@ -171,9 +158,10 @@ def draw_lidar_data():
                 canvas.create_rectangle(rotate_cord(x1,y1), rotate_cord(x2,y2), fill=color, outline=color)
 
                 # 중심에 번호 표시
-                CENTER_X_text = (x1 + x2) / 2 + 3*RADIUS
-                CENTER_Y_text = (y1 + y2) / 2
-                canvas.create_text(CENTER_X_text, CENTER_Y_text, text=str(index))
+                if printNumber.get() == 1:
+                    CENTER_X_text = (x1 + x2) / 2 + 3*RADIUS
+                    CENTER_Y_text = (y1 + y2) / 2
+                    canvas.create_text(CENTER_X_text, CENTER_Y_text, text=str(index))
 
     elif MODE == 'line':
         # 체크된 데이터 병합
@@ -193,6 +181,11 @@ def draw_lidar_data():
 
             canvas.create_line(newCord1, newCord2, width=2, fill=color)
 
+            # 선마다 번호 표시
+            if printNumber.get() == 1:
+                midpoint = midCord(newCord1, newCord2)
+                canvas.create_text(midpoint, text=str(index))
+
     elif MODE == 'debug':
         # 선의 형태로 지도 생성
         for index, log in enumerate(logData):
@@ -208,9 +201,11 @@ def draw_lidar_data():
                 newCord2 = rotate_cord(x2, y2)
 
                 canvas.create_line(newCord1, newCord2, width=2, fill=color)
-                # debug - 선마다 번호 표시
-                midpoint = midCord(newCord1, newCord2)
-                canvas.create_text(midpoint, text=str(index))
+
+                # 선마다 번호 표시
+                if printNumber.get() == 1:
+                    midpoint = midCord(newCord1, newCord2)
+                    canvas.create_text(midpoint, text=str(index))
 
 
     # 중심점
@@ -222,6 +217,12 @@ def draw_lidar_data():
         fill="red",
         arrow=tk.LAST,
     )
+    # dist = 500 / DISTANCE_RATIO
+    # canvas.create_oval(
+    #     CENTER_X - dist, CENTER_Y - dist,
+    #     CENTER_X + dist, CENTER_Y + dist,
+    #     fill=None
+    # )
 
 
 if __name__ == "__main__":
@@ -284,10 +285,15 @@ if __name__ == "__main__":
     radio_var = tk.StringVar(value=MODE)
     modeButton1 = tk.Radiobutton(modeFrame, text='점으로 표시', variable=radio_var, value='dot', command=modeChange)
     modeButton1.grid(column=0, row=1)
-    modeButton2 = tk.Radiobutton(modeFrame, text='선으로 표시', variable=radio_var, value='line', command=modeChange)
+    modeButton2 = tk.Radiobutton(modeFrame, text='선 병합', variable=radio_var, value='line', command=modeChange)
     modeButton2.grid(column=1, row=1)
-    modeButton3 = tk.Radiobutton(modeFrame, text='디버그', variable=radio_var, value='debug', command=modeChange)
+    modeButton3 = tk.Radiobutton(modeFrame, text='선 개별 표시', variable=radio_var, value='debug', command=modeChange)
     modeButton3.grid(column=2, row=1)
+
+    global printNumber
+    printNumber = tk.IntVar(value=0)
+    numberButton = tk.Checkbutton(modeFrame, text='번호 표시', command=numberChange)
+    numberButton.grid(column=3, row=1, columnspan=2)
 
     draw_lidar_data()
     root.mainloop()

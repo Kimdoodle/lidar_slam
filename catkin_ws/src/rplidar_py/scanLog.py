@@ -35,7 +35,11 @@ def loadScanLog(path="./catkin_ws/src/rplidar_py/log") -> list:
             data = re.findall(r'\((.*?)\)', text)
 
             # tuple List 형태로 저장
-            data_list = [tuple(map(float, item.split(','))) for item in data]
+            data_list = []
+            for item in data:
+                ele = tuple(map(float, item.split(',')))
+                if ele[2] > 500:
+                    data_list.append(ele)
             # for data in data_list:
             #     if(data[0] < 15):
             #         print(data)

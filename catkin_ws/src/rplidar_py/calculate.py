@@ -12,7 +12,7 @@ def checkOutlier(data:list):
     newData = []
     for d in data:
         zScore = (d-mean)/std
-        if abs(zScore) > 1:
+        if abs(zScore) > 0.5:
             newData.append(d)
     
     return newData

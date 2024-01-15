@@ -87,14 +87,17 @@ class Scan:
     def makeLine(self):
         '''
             계산한 정보를 토대로 선을 그림
-            간격차이
-            거리차이
+            1. 기울기 비율
+            간격차이, 거리차이 고려
         '''
 
         newLine = True
         sc = None
         data = []
         for i in range(len(self.cordInfo)):
+            # debug
+            if i == 104:
+                print()
             if newLine: # 선 새로 시작
                 sc = ScanCheck(i, self)
                 if sc.isolation(self) == True:
@@ -110,8 +113,10 @@ class Scan:
         # 처음/마지막 선 결합여부 확인
         if sc.update(0, self) == True:
             newEndIndex = data[0].endIndex
-        self.lineInfo.append(Line(self.cordInfo[sc.startIndex], self.cordInfo[newEndIndex], sc.startIndex, newEndIndex))
-        self.lineInfo.pop(0)
+            self.lineInfo.append(Line(self.cordInfo[sc.startIndex], self.cordInfo[newEndIndex], sc.startIndex, newEndIndex))
+            self.lineInfo.pop(0)
+        else:
+            self.lineInfo.append(Line(self.cordInfo[sc.startIndex], self.cordInfo[sc.endIndex], sc.startIndex, sc.endIndex))
 
                 
     def makeLine2(self):
