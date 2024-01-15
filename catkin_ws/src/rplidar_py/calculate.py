@@ -4,6 +4,19 @@ from math import sqrt
 import numpy as np
 
 
+# 이상치 데이터 반환
+def checkOutlier(data:list):
+    mean = np.mean(np.array(data))
+    std = np.std(np.array(data))
+
+    newData = []
+    for d in data:
+        zScore = (d-mean)/std
+        if abs(zScore) > 1:
+            newData.append(d)
+    
+    return newData
+
 # 이상치 제거 후 평균, 표준편차 계산
 def removeOutlier(data:list):
     mean = np.mean(np.array(data))
@@ -12,7 +25,7 @@ def removeOutlier(data:list):
     newData = []
     for d in data:
         zScore = (d-mean)/std
-        if np.abs(zScore) <= 1:
+        if abs(zScore) <= 1:
             newData.append(d)
     
     newMean = np.mean(np.array(newData))
@@ -26,6 +39,14 @@ def check95(mean, std):
     min = mean - zScore * std
 
     return min, max
+
+# 두 좌표의 중점 반환
+def midCord(c1:tuple, c2:tuple) -> tuple:
+    return ((c1[0]+c2[0])/2, (c1[1]+c2[1])/2)
+
+def checkFunc(funcDiff:list):
+    return 0.9, 1.1
+    
 
 # 점 c1, c2 중 직선 밖에 있는 점을 계산하여 해당 점을 기준으로 새로운 시작/끝 좌표 생성
 def newCord(func, c1, c2, cmid, funcmid):

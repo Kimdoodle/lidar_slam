@@ -22,7 +22,7 @@ def saveScanLog(data):
         #print(f"Error saving scan data log: {e}")
         traceback.print_exc()
 
-
+# return [logFileNames, logData]
 def loadScanLog(path="./catkin_ws/src/rplidar_py/log") -> list:
     try:
         # 파일 목록을 구성

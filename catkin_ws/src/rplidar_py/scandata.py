@@ -5,9 +5,10 @@ from math import acos, cos, degrees, radians, sin, sqrt
 import matplotlib.pyplot as plt
 import numpy as np
 import scanLog
-from calculate import check95, removeOutlier
+from calculate import check95, checkOutlier, removeOutlier
 from compare import compare, move
 from icp import icp
+from scanCheck import ScanCheck
 from unit import Cord, Line, rotate_cord
 
 
@@ -24,6 +25,9 @@ class Scan:
         self.interInfo = [] # 각 점 사이의 거리차이
         self.funcInfo = []  # 두 점을 연결한 직선의 기울기행
         self.lineInfo = []  # 완성된 직선 정보
+        
+        self.distOutlier = []
+        self.interOutlier = []
 
         self.calculate()
         self.makeLine()
@@ -44,7 +48,7 @@ class Scan:
     # 초기 지도 데이터 분석
     def calculate(self):
         # debug
-        print(f"총 스캔 데이터 개수: {len(self.cordInfo)}")
+        #print(f"총 스캔 데이터 개수: {len(self.cordInfo)}")
         
         # 인접한 점 사이의 차이 정보 계산
         self.length = len(self.cordInfo)
@@ -58,13 +62,13 @@ class Scan:
             self.angleInfo.append(angleDiff)
 
             # 중심에서의 거리차이
-            distDiff = np.abs(cordII.distance - cordI.distance)
+            distDiff = abs(cordII.distance - cordI.distance)
             self.distInfo.append(distDiff)
             
             # 점 사이의 거리, 기울기 차이
             distX = cordII.x - cordI.x
             distY = cordII.y - cordI.y
-            self.interInfo.append(np.sqrt(distX**2 + distY**2))
+            self.interInfo.append(sqrt(distX**2 + distY**2))
             self.funcInfo.append(distY / distX)
 
         # 이상치 제거 확률분포 계산
@@ -73,12 +77,44 @@ class Scan:
         self.interMean, self.interStd = removeOutlier(self.interInfo)
         self.funcMean, self.funcStd = removeOutlier(self.funcInfo)
 
+        self.distOutlier = checkOutlier(self.distInfo)
+        self.interOutlier = checkOutlier(self.interInfo)
 
         # debug - 계산결과 로그 저장
-        #scanLog.saveCalLog(self)
+        # scanLog.saveCalLog(self)
 
     # 선 정보 계산
     def makeLine(self):
+        '''
+            계산한 정보를 토대로 선을 그림
+            간격차이
+            거리차이
+        '''
+
+        newLine = True
+        sc = None
+        data = []
+        for i in range(len(self.cordInfo)):
+            if newLine: # 선 새로 시작
+                sc = ScanCheck(i, self)
+                if sc.isolation(self) == True:
+                    newLine = False
+            else:
+                endIndex = i
+                result = sc.update(endIndex, self)
+                if result == False:
+                    data.append(sc)
+                    self.lineInfo.append(Line(self.cordInfo[sc.startIndex], self.cordInfo[sc.endIndex], sc.startIndex, sc.endIndex))
+                    newLine = True
+        
+        # 처음/마지막 선 결합여부 확인
+        if sc.update(0, self) == True:
+            newEndIndex = data[0].endIndex
+        self.lineInfo.append(Line(self.cordInfo[sc.startIndex], self.cordInfo[newEndIndex], sc.startIndex, newEndIndex))
+        self.lineInfo.pop(0)
+
+                
+    def makeLine2(self):
         '''
             계산한 정보에서 이상치를 제거 후 확률분포를 구함.
             1. 두 점을 연결한 직선의 기울기 차이
@@ -105,9 +141,9 @@ class Scan:
             
             check = [
                 (funcMin <= self.funcInfo[i] <= funcMax),
-                (interMin <= self.interInfo[i] <= interMax),
-                (angleMin <= self.angleInfo[i] <= angleMax),
-                (distMin <= self.distInfo[i] <= distMax),
+                # (interMin <= self.interInfo[i] <= interMax),
+                # (angleMin <= self.angleInfo[i] <= angleMax),
+                # (distMin <= self.distInfo[i] <= distMax),
             ]
 
             if False in check:

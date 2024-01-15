@@ -1,6 +1,4 @@
 # 지도 정보 클래스
-import bisect
-import math
 from collections import deque
 from math import sqrt
 
@@ -8,15 +6,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scandata
 import scanLog
-from calculate import check95, newCord, removeOutlier
-from icp import best_fit_transform
+from calculate import check95, checkFunc, newCord, removeOutlier
 from scandata import Scan
-from scipy.interpolate import interp1d
 from unit import Cord, Line
 
-mapXSize = 5000
-mapYSize = 5000
-logSize = 100
 
 # 지도
 class Map:
@@ -109,18 +102,22 @@ class Map:
             기울기 비율, 선의 중점 간 거리를 기준으로 확률분포 계산 후 병합
         '''
         newLineInfo = []
-        fmin, fmax = check95(removeOutlier(funcDiff))
-        dmin, dmax = check95(removeOutlier(distDiff))
-        for index in range(len(Index)):
-            if (fmin <= funcDiff[index] <= fmax) & (dmin <= distDiff[index] <= dmax):
-                # 병합 진행
-                newLine = self.mergeLine(scanLine[index], mapLine[Index[index]])
-                newLineInfo.append(newLine)
-            else:
-                # 그대로 삽입
-                newLine = self.mergeLine(scanLine[index])
-                newLineInfo.append(newLine)
+        # fmin, fmax = check95(*removeOutlier(funcDiff))
+        # fmin, fmax = checkFunc(funcDiff)
+        # dmin, dmax = check95(*removeOutlier(distDiff))
+        # for index in range(len(Index)):
+        #     if (fmin <= funcDiff[index] <= fmax) & (dmin <= distDiff[index] <= dmax):
+        #         # 병합 진행
+        #         newLine = self.mergeLine(scanLine[index], mapLine[Index[index]])
+        #         newLineInfo.append(newLine)
+        #     else:
+        #         # 그대로 삽입
+        #         newLine = self.mergeLine(scanLine[index])
+        #         newLineInfo.append(newLine)
 
+        '''
+            기울기 비율이 min과 max사이인 점 중 같은 선에 중복값이 선택 시 거리가 짧은 순으로 배정함
+        '''
         
         self.lineInfo = newLineInfo
             

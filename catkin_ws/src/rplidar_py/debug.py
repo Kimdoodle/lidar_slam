@@ -3,16 +3,18 @@ import re
 import tkinter as tk
 from math import cos, radians, sin
 
+from calculate import midCord
 from mapdata import Map
 from scandata import Scan
 from scanLog import loadScanLog
 
-DISTANCE_RATIO = 5  # 확대/축소
-MOVE_RATIO = 10  # 이동
-ROTATE_RATIO = 1  # 회전
+DISTANCE_RATIO = 3  # 확대/축소
+MOVE_RATIO = 30  # 이동
+ROTATE_RATIO = 5  # 회전
 RADIUS = 5  # 점 하나의 반지름
-MODE = 'line' # 출력 모드 : dot/line
+MODE = 'dot' # 출력 모드 : dot/line/debug
 COLOR = [
+    "black",
     "blanched almond",
     "blue violet",
     "brown",
@@ -45,29 +47,29 @@ def on_closing():
 
 # 창 크기 조절시
 def on_resize(event):
-    global CENTER_X, CENTER_Y, mapData
+    global CENTER_X, CENTER_Y
     new_width = event.width
     new_height = event.height
     canvas.config(width=new_width, height=new_height)
     CENTER_X = new_width / 2
     CENTER_Y = new_width / 2
-    draw_lidar_data(mapData)
+    draw_lidar_data()
 
 # 마우스 좌클릭/우클릭으로 확대/축소 조절
 def increase_distance_ratio(event):
-    global DISTANCE_RATIO, mapData
+    global DISTANCE_RATIO
     DISTANCE_RATIO += 3
-    draw_lidar_data(mapData)
+    draw_lidar_data()
 def decrease_distance_ratio(event):
-    global DISTANCE_RATIO, mapData
+    global DISTANCE_RATIO
     DISTANCE_RATIO -= 3
     if DISTANCE_RATIO < 1:
         DISTANCE_RATIO = 1
-    draw_lidar_data(mapData)
+    draw_lidar_data()
 
 # 방향키로 중심점 조절
 def on_arrow_key(event):
-    global MOVE_X, MOVE_Y, mapData
+    global MOVE_X, MOVE_Y
     key = event.keysym
     if key == "Up":
         MOVE_Y += MOVE_RATIO
@@ -77,17 +79,17 @@ def on_arrow_key(event):
         MOVE_X += MOVE_RATIO
     elif key == "Right":
         MOVE_X -= MOVE_RATIO
-    draw_lidar_data(mapData)
+    draw_lidar_data()
 
 # q, e 키입력으로 방향 조절
 def rotate_left(event):
-    global ROTATE, mapData
+    global ROTATE
     ROTATE += ROTATE_RATIO
-    draw_lidar_data(mapData)
+    draw_lidar_data()
 def rotate_right(event):
-    global ROTATE, mapData
+    global ROTATE
     ROTATE -= ROTATE_RATIO
-    draw_lidar_data(mapData)
+    draw_lidar_data()
 
 # 좌표의 회전 계산
 def rotate_cord(x, y):
@@ -104,39 +106,83 @@ def rotate_cord(x, y):
 
 # 체크 데이터 변경 후 그리기
 def modify_check(index):
-    global CHECK, mapData
+    global CHECK
     if CHECKED[index].get() == 1:
         CHECKED[index].set(0)
         print(f"{index}번 선택 해제")
     else:
         CHECKED[index].set(1)
         CHECK = index
-        print(f"{index}번 선택, data length: {len(logData[index])}")
-    draw_lidar_data(mapData)
+        print(f"{index}번 선택")
+    draw_lidar_data()
 
 # 모드 변경
 def modeChange():
-    global MODE, mapData
-    if MODE == 'dot':
-        MODE = 'line'
-    elif MODE == 'line':
-        MODE = 'dot'
-    draw_lidar_data(mapData)
+    global MODE
+    MODE = radio_var.get()
+    draw_lidar_data()
+
+# def draw_0():
+#     global MODE
+#     if MODE == 'dot':
+#         # 점의 형태로 지도 생성
+#         for index, cord in enumerate(mapData.cordInfo):
+#             x1 = CENTER_X + (cord.x - RADIUS) / DISTANCE_RATIO
+#             y1 = CENTER_Y + (cord.y - RADIUS) / DISTANCE_RATIO
+#             x2 = CENTER_X + (cord.x + RADIUS) / DISTANCE_RATIO
+#             y2 = CENTER_Y + (cord.y + RADIUS) / DISTANCE_RATIO
+#             canvas.create_rectangle(x1, y1, x2, y2, fill='black')
+#     elif MODE == 'line':
+#         # 선의 형태로 지도 생성
+#         for index, lineInfo in enumerate(mapData.lineInfo):
+#             x1 = CENTER_X + lineInfo.startX / DISTANCE_RATIO + MOVE_X
+#             y1 = CENTER_Y + lineInfo.startY / DISTANCE_RATIO + MOVE_Y
+#             x2 = CENTER_X + lineInfo.endX / DISTANCE_RATIO + MOVE_X
+#             y2 = CENTER_Y + lineInfo.endY / DISTANCE_RATIO + MOVE_Y
+#             newCord1 = rotate_cord(x1, y1)
+#             newCord2 = rotate_cord(x2, y2)
+
+#             canvas.create_line(newCord1, newCord2, width=2, fill="black")
 
 # 스캔 데이터를 지도에 표시
-def draw_0():
-    global MODE
+'''
+    MODE = dot --> 선택한 데이터 각각을 점 데이터로 표시함
+    MODE = line --> 선택한 데이터를 병합하여 선 데이터로 표시함
+    MODE = debug --> 선택한 데이터의 선 데이터 정보를 각각 표시함
+'''
+def draw_lidar_data():
+    canvas.delete("all")
+    print(f"MOVE_X: {MOVE_X}, MOVE_Y: {MOVE_Y}, ROTATE: {ROTATE}")
+
+    logData = loadScanLog()[1]
+
     if MODE == 'dot':
-        mapData.update(Scan(logData[0]))
         # 점의 형태로 지도 생성
-        for index, cord in enumerate(mapData.cordInfo):
-            x1 = CENTER_X + (cord.x - RADIUS) / DISTANCE_RATIO
-            y1 = CENTER_Y + (cord.y - RADIUS) / DISTANCE_RATIO
-            x2 = CENTER_X + (cord.x + RADIUS) / DISTANCE_RATIO
-            y2 = CENTER_Y + (cord.y + RADIUS) / DISTANCE_RATIO
-            canvas.create_rectangle(x1, y1, x2, y2, fill='black')
+        for index, log in enumerate(logData):
+            if CHECKED[index].get() == 0: continue
+            color = COLOR[index]
+            mapData = Map(Scan(log))
+            for index, cord in enumerate(mapData.cordInfo):
+                y1 = CENTER_Y + (cord.y - RADIUS) / DISTANCE_RATIO + MOVE_Y
+                x2 = CENTER_X + (cord.x + RADIUS) / DISTANCE_RATIO + MOVE_X
+                y2 = CENTER_Y + (cord.y + RADIUS) / DISTANCE_RATIO + MOVE_Y
+                x1 = CENTER_X + (cord.x - RADIUS) / DISTANCE_RATIO + MOVE_X
+
+                canvas.create_rectangle(rotate_cord(x1,y1), rotate_cord(x2,y2), fill=color, outline=color)
+
+                # 중심에 번호 표시
+                CENTER_X_text = (x1 + x2) / 2 + 3*RADIUS
+                CENTER_Y_text = (y1 + y2) / 2
+                canvas.create_text(CENTER_X_text, CENTER_Y_text, text=str(index))
+
     elif MODE == 'line':
+        # 체크된 데이터 병합
+        mapData = Map(Scan(logData[0]))
+        for index, value in enumerate(CHECKED[1:]):
+            if value.get() == 1:
+                mapData.update(Scan(logData[index+1]))
         # 선의 형태로 지도 생성
+        color = 'red'
         for index, lineInfo in enumerate(mapData.lineInfo):
             x1 = CENTER_X + lineInfo.startX / DISTANCE_RATIO + MOVE_X
             y1 = CENTER_Y + lineInfo.startY / DISTANCE_RATIO + MOVE_Y
@@ -145,85 +191,46 @@ def draw_0():
             newCord1 = rotate_cord(x1, y1)
             newCord2 = rotate_cord(x2, y2)
 
-            canvas.create_line(newCord1, newCord2, width=2, fill="black")
+            canvas.create_line(newCord1, newCord2, width=2, fill=color)
 
+    elif MODE == 'debug':
+        # 선의 형태로 지도 생성
+        for index, log in enumerate(logData):
+            if CHECKED[index].get() == 0: continue
+            color = 'red' if index==0 else COLOR[index]
+            mapData = Map(Scan(log))
+            for index, lineInfo in enumerate(mapData.lineInfo):
+                x1 = CENTER_X + lineInfo.startX / DISTANCE_RATIO + MOVE_X
+                y1 = CENTER_Y + lineInfo.startY / DISTANCE_RATIO + MOVE_Y
+                x2 = CENTER_X + lineInfo.endX / DISTANCE_RATIO + MOVE_X
+                y2 = CENTER_Y + lineInfo.endY / DISTANCE_RATIO + MOVE_Y
+                newCord1 = rotate_cord(x1, y1)
+                newCord2 = rotate_cord(x2, y2)
 
-def draw_lidar_data(mapData:Map):
-    global MODE
-    canvas.delete("all")
-    print(f"MOVE_X: {MOVE_X}, MOVE_Y: {MOVE_Y}, ROTATE: {ROTATE}")
-    removeRadius = RADIUS * 100 / DISTANCE_RATIO
-    for index, value in enumerate(CHECKED):
-        # 0번 데이터는 항상 출력
-        if index == 0:
-            draw_0()
-        else:
-            # 나머지 데이터
-            v = value.get()
-            if v == 1:
-                mapData.update(Scan(logData[index]))
-                color = COLOR[index]
-
-                if MODE == 'dot':
-                    # 점의 형태로 지도 생성
-                    for index, cord in enumerate(mapData.cordInfo):
-                        y1 = CENTER_Y + (cord.y - RADIUS) / DISTANCE_RATIO + MOVE_Y
-                        x2 = CENTER_X + (cord.x + RADIUS) / DISTANCE_RATIO + MOVE_X
-                        y2 = CENTER_Y + (cord.y + RADIUS) / DISTANCE_RATIO + MOVE_Y
-                        x1 = CENTER_X + (cord.x - RADIUS) / DISTANCE_RATIO + MOVE_X
-
-                        canvas.create_rectangle(rotate_cord(x1,y1), rotate_cord(x2,y2), fill=color, outline=color)
-
-                        # # 중심에 번호 표시
-                        # CENTER_X_text = (x1 + x2) / 2
-                        # CENTER_Y_text = (y1 + y2) / 2
-                        # canvas.create_text(CENTER_X_text, CENTER_Y_text, text=str(index))
-                elif MODE == 'line':
-                    # 선의 형태로 지도 생성
-                    for index, lineInfo in enumerate(mapData.lineInfo):
-                        x1 = CENTER_X + lineInfo.startX / DISTANCE_RATIO + MOVE_X
-                        y1 = CENTER_Y + lineInfo.startY / DISTANCE_RATIO + MOVE_Y
-                        x2 = CENTER_X + lineInfo.endX / DISTANCE_RATIO + MOVE_X
-                        y2 = CENTER_Y + lineInfo.endY / DISTANCE_RATIO + MOVE_Y
-                        newCord1 = rotate_cord(x1, y1)
-                        newCord2 = rotate_cord(x2, y2)
-
-                        canvas.create_line(newCord1, newCord2, width=2, fill=color)
-                        # debug - 선마다 번호 표시
-                        midpoint = (
-                            (newCord1[0] + newCord2[0]) / 2,
-                            (newCord1[1] + newCord2[1]) / 2,
-                        )
-                        #canvas.create_text(midpoint, text=str(index))
-
+                canvas.create_line(newCord1, newCord2, width=2, fill=color)
+                # debug - 선마다 번호 표시
+                midpoint = midCord(newCord1, newCord2)
+                canvas.create_text(midpoint, text=str(index))
 
 
     # 중심점
     canvas.create_line(
-        CENTER_X - 2 * RADIUS,
-        CENTER_Y,
-        CENTER_X + 2 * RADIUS,
-        CENTER_Y,
+        CENTER_X - 2 * RADIUS + MOVE_X,
+        CENTER_Y + MOVE_Y,
+        CENTER_X + 2 * RADIUS + MOVE_X,
+        CENTER_Y + MOVE_Y,
         fill="red",
         arrow=tk.LAST,
     )
 
-    canvas.create_oval(
-        CENTER_X - removeRadius,
-        CENTER_Y - removeRadius,
-        CENTER_X + removeRadius,
-        CENTER_Y + removeRadius,
-        fill=None,
-    )
-
 
 if __name__ == "__main__":
-    global root, canvas, logData, logName, mapData
+    global root, canvas
     root = tk.Tk()
     root.protocol("WM_DELETE_WINDOW", on_closing)
     root.title("DEBUG MAP")
-    width = 1000
-    height = 800
+    width = 1600
+    height = 900
     canvas = tk.Canvas(root, width=width, height=height, bg="white")
     select = tk.Frame(root, width=width)
     modeFrame = tk.Frame(root, width=width)
@@ -250,16 +257,11 @@ if __name__ == "__main__":
     canvas.pack()
 
     # 로그
-    logName, logData = loadScanLog()
-    # 지도 데이터 선언
-    mapData = Map(Scan(logData[0]))
+    logName = loadScanLog()[0]
 
-    # 표시하는 로그 데이터 버튼
-    for index, log in enumerate(logData):
+    # 로그 데이터 병합 선택 버튼
+    for index, log in enumerate(logName):
         intvalue = 0
-        if index == 0:
-            # 0번 데이터 항상 활성화
-            intvalue = 1
 
         match = logName[index].split("-")
         button = tk.Checkbutton(
@@ -268,16 +270,24 @@ if __name__ == "__main__":
             variable=index,
             command=lambda index=index: modify_check(index),
         )
+        if index == 0:
+            # 0번 데이터 항상 활성화
+            button.configure(state='disabled')
+            intvalue = 1
+
         CHECKED.append(tk.IntVar(value=intvalue))
         # print(f"index:{index}, intvalue:{intvalue}")
         button.grid(row=0, column=index, padx=10)
 
-    # 모드 라디오버튼
-    radio_var = tk.StringVar()
+    # 모드 선택 버튼
+    global radio_var
+    radio_var = tk.StringVar(value=MODE)
     modeButton1 = tk.Radiobutton(modeFrame, text='점으로 표시', variable=radio_var, value='dot', command=modeChange)
     modeButton1.grid(column=0, row=1)
     modeButton2 = tk.Radiobutton(modeFrame, text='선으로 표시', variable=radio_var, value='line', command=modeChange)
     modeButton2.grid(column=1, row=1)
+    modeButton3 = tk.Radiobutton(modeFrame, text='디버그', variable=radio_var, value='debug', command=modeChange)
+    modeButton3.grid(column=2, row=1)
 
-    draw_lidar_data(mapData)
+    draw_lidar_data()
     root.mainloop()
