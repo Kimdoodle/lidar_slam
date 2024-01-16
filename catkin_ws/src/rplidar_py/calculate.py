@@ -1,8 +1,28 @@
 # 여러가지 계산 함수
-from math import sqrt
+from math import atan2, cos, pi, radians, sin, sqrt
 
 import numpy as np
 
+
+# 두 좌표의 거리 반환
+def calculate_dist(cord1:tuple, cord2:tuple) -> tuple:
+    return sqrt((cord1[0]-cord2[0])**2 + (cord1[1]-cord2[1])**2)
+
+# 두 직선이 이루는 각을 계산
+def calculate_angle(m1, m2):
+    angle_rad = atan2((m2 - m1) , (1 + m1 * m2))
+    angle_deg = angle_rad * 180 / pi
+
+    return angle_deg
+
+# 좌표를 이동, 회전
+def calculate_move(x, y, movex, movey, rotate) -> tuple:
+    x += movex
+    y += movey
+    theta = radians(rotate)
+    x = cos(theta) * x - sin(theta) * y
+    y = sin(theta) * x + cos(theta) * y
+    return (x, y)
 
 # 이상치 데이터 반환
 def checkOutlier(data:list):

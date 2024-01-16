@@ -8,7 +8,7 @@ import scanLog
 from calculate import check95, checkOutlier, removeOutlier
 from compare import compare, move
 from icp import icp
-from scanCheck import ScanCheck
+from scanCheck import ScanCheckDotToLine
 from unit import Cord, Line, rotate_cord
 
 
@@ -90,16 +90,12 @@ class Scan:
             1. 기울기 비율
             간격차이, 거리차이 고려
         '''
-
         newLine = True
         sc = None
         data = []
         for i in range(len(self.cordInfo)):
-            # debug
-            if i == 104:
-                print()
             if newLine: # 선 새로 시작
-                sc = ScanCheck(i, self)
+                sc = ScanCheckDotToLine(i, self)
                 if sc.isolation(self) == True:
                     newLine = False
             else:
@@ -119,52 +115,51 @@ class Scan:
             self.lineInfo.append(Line(self.cordInfo[sc.startIndex], self.cordInfo[sc.endIndex], sc.startIndex, sc.endIndex))
 
                 
-    def makeLine2(self):
-        '''
-            계산한 정보에서 이상치를 제거 후 확률분포를 구함.
-            1. 두 점을 연결한 직선의 기울기 차이
-            2. 두 점의 간격
-            3. 두 점의 각도차
-            4. 두 점까지의 거리차
-        '''
+    # def makeLine2(self):
+    #     '''
+    #         계산한 정보에서 이상치를 제거 후 확률분포를 구함.
+    #         1. 두 점을 연결한 직선의 기울기 차이
+    #         2. 두 점의 간격
+    #         3. 두 점의 각도차
+    #         4. 두 점까지의 거리차
+    #     '''
 
-        # 각 데이터의 95% 신뢰구간 기준값을 계산
-        angleMin, angleMax = check95(self.angleMean, self.angleStd)
-        distMin, distMax = check95(self.distMean, self.distStd)
-        interMin, interMax = check95(self.interMean, self.interStd)
-        funcMin, funcMax = check95(self.funcMean, self.funcStd)
+    #     # 각 데이터의 95% 신뢰구간 기준값을 계산
+    #     angleMin, angleMax = check95(self.angleMean, self.angleStd)
+    #     distMin, distMax = check95(self.distMean, self.distStd)
+    #     interMin, interMax = check95(self.interMean, self.interStd)
+    #     funcMin, funcMax = check95(self.funcMean, self.funcStd)
 
-        i = 0
-        start = self.cordInfo[i]
-        startIndex = i
-        while True:
-            end = self.cordInfo[i]
-            endIndex = i
-            i2 = (i + 1) % self.length
-            comp = self.cordInfo[i2]
+    #     i = 0
+    #     start = self.cordInfo[i]
+    #     startIndex = i
+    #     while True:
+    #         end = self.cordInfo[i]
+    #         endIndex = i
+    #         i2 = (i + 1) % self.length
+    #         comp = self.cordInfo[i2]
 
             
-            check = [
-                (funcMin <= self.funcInfo[i] <= funcMax),
-                # (interMin <= self.interInfo[i] <= interMax),
-                # (angleMin <= self.angleInfo[i] <= angleMax),
-                # (distMin <= self.distInfo[i] <= distMax),
-            ]
+    #         check = [
+    #             (funcMin <= self.funcInfo[i] <= funcMax),
+    #             # (interMin <= self.interInfo[i] <= interMax),
+    #             # (angleMin <= self.angleInfo[i] <= angleMax),
+    #             # (distMin <= self.distInfo[i] <= distMax),
+    #         ]
 
-            if False in check:
-                self.lineInfo.append(Line(start, end, startIndex, endIndex))
-                start = comp
+    #         if False in check:
+    #             self.lineInfo.append(Line(start, end, startIndex, endIndex))
+    #             start = comp
 
-            if i2 == 0: break
-            i = i2
+    #         if i2 == 0: break
+    #         i = i2
     
     # 스캔 데이터 단순화 - 직선 수를 줄임
     '''
-        현재 테스트중인 항목
         중심점과 직선이 이루는 각도를 계산
         인접한 각도차를 비교하여 비슷하다면 직선을 합침
     '''
-    def simplify(self):
+    def simplify(self):        
         log = self.lineLog
         mean = np.mean(np.array(log))
         std = np.std(np.array(log))

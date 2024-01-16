@@ -15,7 +15,6 @@ RADIUS = 5  # 점 하나의 반지름
 MODE = 'dot' # 출력 모드 : dot/line/debug
 COLOR = [
     "black",
-    "blanched almond",
     "blue violet",
     "brown",
     "burlywood",
@@ -232,9 +231,12 @@ if __name__ == "__main__":
     root.title("DEBUG MAP")
     width = 1600
     height = 900
+    # width = 3000
+    # height = 2000
     canvas = tk.Canvas(root, width=width, height=height, bg="white")
     select = tk.Frame(root, width=width)
     modeFrame = tk.Frame(root, width=width)
+    infoFrame = tk.Frame(root, width=width)
 
     # 중심점 계산
     CENTER_X = width / 2
@@ -256,6 +258,7 @@ if __name__ == "__main__":
     select.pack()
     modeFrame.pack()
     canvas.pack()
+    infoFrame.pack()
 
     # 로그
     logName = loadScanLog()[0]
@@ -295,5 +298,7 @@ if __name__ == "__main__":
     numberButton = tk.Checkbutton(modeFrame, text='번호 표시', command=numberChange)
     numberButton.grid(column=3, row=1, columnspan=2)
 
+    # 안내사항
+    label = tk.Label(infoFrame, text='q/e: 회전, 좌/우클릭: 확대/축소, 화살표: 이동').grid()
     draw_lidar_data()
     root.mainloop()

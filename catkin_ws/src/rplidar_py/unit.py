@@ -63,6 +63,13 @@ class Line:
         self.startY = cordI.y
         self.endX = cordII.x
         self.endY = cordII.y
+        self.func = self.calFunc()
+    
+    def calFunc(self):
+        return (self.endY - self.startY)/(self.endX - self.startX)
+    
+    def calMid(self):
+        return ((self.endX - self.startX)/2, (self.endY - self.startY)/2)
     
     def toString(self):
         return(f'{self.startX}, {self.startY}, {self.endX}, {self.endY}')
