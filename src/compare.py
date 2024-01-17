@@ -3,8 +3,9 @@ import copy
 from math import cos, sqrt
 
 import numpy as np
-from scanLog import loadScanLog
 from scipy.spatial import cKDTree
+
+from scanLog import loadScanLog
 from unit import Cord
 
 
@@ -175,7 +176,7 @@ def feature(cordInfo):
     return feat
 
 if __name__ == '__main__':
-    logData = loadScanLog("./catkin_ws/src/rplidar_py/log2")
+    logData = loadScanLog("./src/log2")
     data1 = [Cord(element) for element in logData[0]]
     data2 = [Cord(element) for element in logData[1]]
     print(compare(data1, data2))
