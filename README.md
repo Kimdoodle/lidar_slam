@@ -1,32 +1,11 @@
-# 2023년 개별연구 - LiDAR 센서 다루기
+# 2023년 개별연구 - LiDAR 센서
 
-SDK: https://github.com/slamtec/rplidar_ros
+SLAM algorithm test using LiDAR
 
-## 빌드 방법
+## Source Code
+### src/main.py: 그래픽 인터페이스
 
-   1) Clone, move into catkin_ws and build
-   ```bash
-   $ cd ~/.../catkin_ws
-   $ catkin_make
-   ```
-   2) Set ROS Workspace
-   ```bash
-   source .../catkin_ws/devel/setup.bash
-   ``````
+- q / e 키 입력으로 회전
+- 마우스 좌/우클릭으로 확대 및 축소
+- 화살표 입력으로 이동
 
-## 실행 방법
-### I. rviz를 사용한 그래픽 인터페이스
-
-```bash
-$ roslaunch rplidar_ros view_rplidar_a3.launch
-```
-
-### II. Server/Client방식
-   1) Server
-   ```bash
-   $ roslaunch rplidar_ros rplidar_a3.launch
-   ```
-   2) Client
-   ```bash
-   $ rosrun rplidar_ros rplidarNodeClient
-   ```
