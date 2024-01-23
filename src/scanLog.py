@@ -1,26 +1,49 @@
 # FOR DEBUG - Logfile save/load
 import datetime
+import fcntl
 import os
 import re
+import sys
+import time
+import tkinter
 import traceback
 
+import serial
 
-def saveScanLog(data):
+import graphics
+import mapdata
+import scandata
+from rplidar import RPLidar
+
+
+# 로그 스캔, 1초마다 반복함
+def saveScanLog():
     try:
-        current_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-        filename = f'log_{current_time}.txt'
-        filedirectory = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log', filename)
+        serial_port = '/dev/ttyUSB0'
+        lidar = RPLidar(serial_port, 256000)
+        time.sleep(6)
+        # 스캔
+        for i, scan in enumerate(lidar.iter_scans()):
+            data = scandata.Scan(scan)
+            current_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+            filename = f'log_{current_time}.txt'
+            filedirectory = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log', filename)
 
-        # 파일을 현재 디렉토리에 저장
-        with open(filedirectory, 'w') as file:
-            for cord in data.cordInfo:
-                text = '('+', '.join(map(str, cord.toLog())) + ')\n'
-                file.write(text)
+            # 파일을 현재 디렉토리에 저장
+            with open(filedirectory, 'w') as file:
+                for cord in data.cordInfo:
+                    text = '('+', '.join(map(str, cord.toLog())) + ')\n'
+                    file.write(text)
 
-        print(f"Scan data log successfully saved to {filename}, data: {len(data.cordInfo)}")
+            print(f"Scan data log successfully saved to {filename}, data: {len(data.cordInfo)}")
+            # time.sleep(1)
     except Exception as e:
         #print(f"Error saving scan data log: {e}")
         traceback.print_exc()
+    finally:
+        lidar.stop()
+        lidar.stop_motor()
+        lidar.disconnect()
 
 # return [logFileNames, logData]
 def loadScanLog(path="./src/log") -> list:
@@ -82,3 +105,7 @@ def saveCalLog(scan):
         print(f"Scan data log successfully saved to {filename}")
     except Exception as e:
         print(f"Error saving scan data log: {e}")
+
+
+if __name__== '__main__':
+    saveScanLog()
