@@ -4,13 +4,14 @@ from math import atan, sqrt
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.spatial import cKDTree
+
 import scandata
 import scanLog
 from calculate import (calculate_angle, calculate_dist, check95, checkFunc,
                        newCord, removeOutlier)
-from scanCheck import MoveLine
+from scanCheck import MoveLine, DataCheck
 from scandata import Scan
-from scipy.spatial import cKDTree
 from unit import Cord, Line
 
 
@@ -28,7 +29,9 @@ class Map:
         self.posLog = [] # 위치 로그
         self.scanLog = deque(maxlen=100)
         self.lineLog = deque(maxlen=100)
-    
+
+        self.icpResult = [] # ICP알고리즘 적용 후 데이터
+
     # 새로운 스캔 데이터가 입력되었을 때 분석，업데이트
     '''
         scanLog에는 각 스캔 데이터의 원본 좌표값이 삽입됨
@@ -138,8 +141,43 @@ class Map:
                 self.lineInfo.append(moveInfo.justMove(newLine))
         
 
-        
-        
+    # ICP알고리즘을 적용하여 데이터 업데이트
+    '''
+        1. 다운샘플링을 통한 데이터 수 일치시킴
+        2. ICP알고리즘 사용
+    '''
+    def updateICP(self, new:Scan):
+        # 데이터 다운샘플링
+        old, new = self.downSample(self, new)
+
+    # 데이터 다운샘플링
+    def downSample(self, new:Scan):
+        # 기준 개수를 설정 - 두 데이터 중 작은 수를 설정
+        array = self if self.cordInfo.length > new.cordInfo.length else new
+        targetCount = abs(array.cordInfo.length - new.cordInfo.length)
+
+        # 1. 각도차, 거리차이를 이용한 outlier제거
+        # 좌우 데이터를 비교하여 양쪽 값이 평균값보다 모두 큰 데이터 제거
+        cordArray = np.array(array.angleInfo)
+        mean = np.mean(cordArray)
+        temp = []
+        # 데이터 추출
+        for index, cord in enumerate(cordArray):
+            prev = cordArray[index-1]
+            curr = cordArray[index]
+            if (prev > mean) & (curr > mean):
+                temp.append(DataCheck(index, prev, curr))
+
+        # 데이터 선별
+        temp = [ele.index for ele in sorted(temp)[:targetCount]]
+        count = 0
+        result = [ele for index, ele in enumerate(array) if index not in temp]
+
+        if self.cordInfo.length > new.cordInfo.length:
+            return result, new
+        else:
+            return new, result
+
         # # 각 선마다 중간지점의 값과 기울기  데이터로 비교함
         # '''
         #     기울기 비율이 일정 이하인 선 중에서 중간좌표의 거리가 가장 짧은 데이터 검색
@@ -250,22 +288,3 @@ class Map:
     # # 초기화함수
     # def reset(self):
     #     self.__init__()
-
-if __name__ == '__main__':
-    logData = scanLog.loadScanLog()[0]
-    instance = Map(scandata.Scan(logData))
-
-    # 정규분포화
-    data_array = np.array(instance.interInfo)
-    # 최솟값과 최댓값 계산
-    min_value = np.min(data_array) - 500
-    max_value = np.max(data_array) + 500
-
-    # 최솟값 - 500부터 최댓값 + 500까지의 범위에서 히스토그램 그리기
-    plt.hist(data_array, bins=np.arange(min_value, max_value + 50, 50), alpha=0.7, color='blue')
-
-    plt.title('Distribution of Data from {} to {}'.format(min_value, max_value))  # 영문으로 표시
-    plt.xlabel('Value')
-    plt.ylabel('Frequency')
-    plt.grid(True)
-    plt.show()

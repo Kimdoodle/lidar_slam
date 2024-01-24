@@ -13,24 +13,10 @@ MOVE_RATIO = 30  # 이동
 ROTATE_RATIO = 5  # 회전
 RADIUS = 5  # 점 하나의 반지름
 MODE = 'dot' # 출력 모드 : dot/line/debug
-COLOR = [
-    "black",
-    "blue violet",
-    "brown",
-    "burlywood",
-    "cadet blue",
-    "chartreuse",
-    "chocolate",
-    "coral",
-    "cornflower blue",
-    "dark goldenrod",
-    "dark green",
-    "dark olive green",
-    "dark orange",
-    "dark orchid",
-    "dark salmon",
-]
-# 점 색상
+COLOR = [ "black", "blue violet", "brown", "burlywood", "cadet blue",
+    "chartreuse", "chocolate", "coral", "cornflower blue", "dark goldenrod",
+    "dark green", "dark olive green", "dark orange", "dark orchid", "dark salmon",
+] # 점 색상
 CHECK = 0
 CHECKED = []
 CENTER_X = 0

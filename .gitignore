@@ -1,6 +1,9 @@
 # vscode
 .vscode/
 
+# pycharm
+*.idea
+
 # __pycache__
 __pycache__/
 *.py[cod]

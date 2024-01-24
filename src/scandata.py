@@ -4,6 +4,7 @@ from math import acos, cos, degrees, radians, sin, sqrt
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 import scanLog
 from calculate import check95, checkOutlier, removeOutlier
 from compare import compare, move
@@ -12,14 +13,13 @@ from scanCheck import ScanCheckDotToLine
 from unit import Cord, Line, rotate_cord
 
 
-# 스캔　데이터
+# 스캔 데이터
 class Scan:
     def __init__(self, data):
         self.cordInfo = [Cord(element) for element in data]  # 각 점의 좌표정보
         self.cordXY = [(cord.x, cord.y) for cord in self.cordInfo]
         self.interInfo = [] # 각 점 사이의 거리차이
         # self.index = index
-        self.cordInfo = [Cord(element) for element in data]  # 각 점의 좌표정보
         self.angleInfo = [] # 각 점 사이의 각도차이
         self.distInfo = []  # 중심에서 각 점까지의 거리 차이
         self.interInfo = [] # 각 점 사이의 거리차이
@@ -48,7 +48,7 @@ class Scan:
     # 초기 지도 데이터 분석
     def calculate(self):
         # debug
-        #print(f"총 스캔 데이터 개수: {len(self.cordInfo)}")
+        # print(f"총 스캔 데이터 개수: {len(self.cordInfo)}")
         
         # 인접한 점 사이의 차이 정보 계산
         self.length = len(self.cordInfo)

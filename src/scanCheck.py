@@ -9,6 +9,23 @@ totalInterMean = 0
 maxCrit = 100
 totalcount = 0
 
+# 데이터 비교 클래스
+class DataCheck():
+    def __init__(self, index, prev, curr):
+        self.index = index
+        self.prev = prev
+        self.curr = curr
+        self.avg = (prev+curr)/2
+    def __le__(self, other:DataCheck):
+        return self.avg <= other.avg
+    def __ge__(self, other:DataCheck):
+        return self.avg >= other.avg
+    def __gt__(self, other:DataCheck):
+        return self.avg > other.avg
+    def __lt__(self, other:DataCheck):
+        return self.avg < other.avg
+
+
 # 점 -> 선 결정 클래스
 class ScanCheckDotToLine():
     def __init__(self, sindex:int, scan):
