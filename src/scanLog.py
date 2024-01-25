@@ -1,19 +1,17 @@
 # FOR DEBUG - Logfile save/load
 import datetime
-import fcntl
 import os
 import re
-import sys
 import time
-import tkinter
 import traceback
+try:
+    import serial
+    import fcntl
+    from rplidar import RPLidar
+except:
+    pass
 
-import serial
-
-import graphics
-import mapdata
 import scandata
-from rplidar import RPLidar
 
 
 # 로그 스캔, 1초마다 반복함
@@ -38,7 +36,7 @@ def saveScanLog():
             print(f"Scan data log successfully saved to {filename}, data: {len(data.cordInfo)}")
             # time.sleep(1)
     except Exception as e:
-        #print(f"Error saving scan data log: {e}")
+        # print(f"Error saving scan data log: {e}")
         traceback.print_exc()
     finally:
         lidar.stop()
@@ -46,7 +44,7 @@ def saveScanLog():
         lidar.disconnect()
 
 # return [logFileNames, logData]
-def loadScanLog(path="./src/log") -> list:
+def loadScanLog(path=os.path.dirname(os.path.abspath(__file__))+"/log") -> list:
     try:
         # 파일 목록을 구성
         fileList = sorted(os.listdir(path))
@@ -107,5 +105,5 @@ def saveCalLog(scan):
         print(f"Error saving scan data log: {e}")
 
 
-if __name__== '__main__':
-    saveScanLog()
+if __name__ == '__main__':
+    print(loadScanLog()[1])

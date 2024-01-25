@@ -10,24 +10,24 @@ maxCrit = 100
 totalcount = 0
 
 # 데이터 비교 클래스
-class DataCheck():
+class DataCheck:
     def __init__(self, index, prev, curr):
         self.index = index
         self.prev = prev
         self.curr = curr
         self.avg = (prev+curr)/2
-    def __le__(self, other:DataCheck):
+    def __le__(self, other):
         return self.avg <= other.avg
-    def __ge__(self, other:DataCheck):
+    def __ge__(self, other):
         return self.avg >= other.avg
-    def __gt__(self, other:DataCheck):
+    def __gt__(self, other):
         return self.avg > other.avg
-    def __lt__(self, other:DataCheck):
+    def __lt__(self, other):
         return self.avg < other.avg
 
 
 # 점 -> 선 결정 클래스
-class ScanCheckDotToLine():
+class ScanCheckDotToLine:
     def __init__(self, sindex:int, scan):
         self.startIndex = sindex
         self.endIndex = -99
@@ -43,7 +43,7 @@ class ScanCheckDotToLine():
         self.endIndex = newEndIndex
         inter = scan.interInfo[newEndIndex]
         dist = scan.distInfo[newEndIndex]
-        
+
         # 조건
         if(self.crit != self.moveDirection(scan, newEndIndex)):
             return False
@@ -55,12 +55,12 @@ class ScanCheckDotToLine():
             return True
         else:
             return False
-    
+
     # x/y축 이동여부 검사
     def moveDirection(self, scan, index) -> str:
         # cordI = scan.cordInfo[self.startIndex]
         # cordII = scan.cordInfo[(self.startIndex+1)%len(scan.cordInfo)]
-        
+
         # xDiff = abs(cordII.x - cordI.x)
         # yDiff = abs(cordII.y - cordI.y)
         # crit = 5
@@ -89,17 +89,17 @@ class ScanCheckDotToLine():
             return False
         else:
             return True
-        
+
 
 # 선 이동 클래스
-class MoveLine():
+class MoveLine:
     def __init__(self):
         self.moveX = 0
         self.moveY = 0
         self.rotate = 0
         self.sum = [0, 0, 0]
         self.count = 0
-    
+
     def update(self, old:Line, new:Line) -> Line:
         self.count += 1
         oldMid = old.calMid()
@@ -128,14 +128,13 @@ class MoveLine():
         # 거리 비교
         newStart = start1 if calculate_dist(start1, oldMid) > calculate_dist(start2, oldMid) else start2
         newEnd = end1 if calculate_dist(end1, oldMid) > calculate_dist(end2, oldMid) else end2
-        
-        
+
+
         return Line(Cord(newStart), Cord(newEnd), 0, 0)
-    
+
     def justMove(self, new:Line) -> Line:
         newStart = calculate_move(new.startX, new.startY, self.e, self.moveY, 0)
         newEnd = calculate_move(new.endX, new.endY, self.e, self.moveY, 0)
-        
+
         return Line(Cord(newStart), Cord(newEnd), 0 ,0)
-        
-        
+
