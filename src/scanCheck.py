@@ -27,6 +27,15 @@ class DataCheck:
 
 
 # 점 -> 선 결정 클래스
+class Temp:
+    def __init__(self, scan, cluster: list):
+        self.cordInfo = cluster
+        cordInfo = scan.cordInfo
+        self.sIndex = cordInfo.index(cluster[0])
+        self.eIndex = cordInfo.index(cluster[1])
+        if self.sIndex > self.eIndex:
+            self.sIndex -= len(cordInfo)
+
 class ScanCheckDotToLine:
     def __init__(self, sindex:int, scan):
         self.startIndex = sindex

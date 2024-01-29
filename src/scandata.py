@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import scanLog
-from calculate import check95, checkOutlier, removeOutlier
+from calculate import check95, checkOutlier, removeOutlier, calculate_angle
 from compare import compare, move
 from icp import icp
 from scanCheck import ScanCheckDotToLine
@@ -84,37 +84,96 @@ class Scan:
 
     # 선 정보 계산
     def makeLine(self):
-        '''
+        """
             계산한 정보를 토대로 선을 그림
-            1. 기울기 비율
-            간격차이, 거리차이 고려
-        '''
-        newLine = True
-        sc = None
-        data = []
-        for i in range(len(self.cordInfo)):
-            if newLine:  # 선 새로 시작
-                sc = ScanCheckDotToLine(i, self)
-                if sc.isolation(self) == True:
-                    newLine = False
-            else:
-                endIndex = i
-                result = sc.update(endIndex, self)
-                if result == False:
-                    data.append(sc)
-                    self.lineInfo.append(
-                        Line(self.cordInfo[sc.startIndex], self.cordInfo[sc.endIndex], sc.startIndex, sc.endIndex))
-                    newLine = True
+            1. 간격차를 이용하여 클러스터링
+            2. 하나의 클러스터 내부에서 선 생성
+        """
 
-        # 처음/마지막 선 결합여부 확인
-        if sc.update(0, self) == True:
-            newEndIndex = data[0].endIndex
-            self.lineInfo.append(
-                Line(self.cordInfo[sc.startIndex], self.cordInfo[newEndIndex], sc.startIndex, newEndIndex))
-            self.lineInfo.pop(0)
-        else:
-            self.lineInfo.append(
-                Line(self.cordInfo[sc.startIndex], self.cordInfo[sc.endIndex], sc.startIndex, sc.endIndex))
+        # 1. 클러스터링 - interInfo이용
+        mean = np.mean(np.array(self.interInfo))
+        std = np.std(np.array(self.interInfo))
+        length = len(self.interInfo)
+
+        clusters = []
+        cluster = []
+        for index in range(length):
+            zScore = (self.interInfo[index] - mean) / std
+            cluster.append(self.cordInfo[index])
+            if abs(zScore) > 1:
+                if len(cluster) >= 5:
+                    clusters.append(cluster)
+                cluster = []
+        if cluster: clusters.append(cluster)
+
+        if (self.interInfo[-1] - mean) / std <= 1:
+            clusters[0] += clusters[-1]
+            clusters.pop()
+
+        # 2. 각 클러스터 별 선 생성
+        for cluster in clusters:
+            sIndex = self.cordInfo.index(cluster[0])
+            eIndex = self.cordInfo.index(cluster[-1])
+            if sIndex > eIndex:
+                sIndex -= len(self.cordInfo)
+
+
+            # 기울기 정보 이상치를 기준으로 선 구분 및 생성
+            line = []
+            sum = 0
+            mean = self.funcInfo[sIndex]
+            pos = sIndex
+            while pos <= eIndex:
+                try:
+                    func = self.funcInfo[pos]
+                    line.append(pos)
+                    if calculate_angle(mean, func) <= 10:
+                        sum += func
+                        mean = sum/len(line)
+                    else:
+                        sum = 0
+                        mean = func
+                        self.lineInfo.append(Line(self.cordInfo[line[0]],
+                                                  self.cordInfo[line[-1]],
+                                                  line[0], line[-1]))
+                        line = []
+                    pos += 1
+                except Exception as e:
+                    print(e)
+
+            if line:
+                self.lineInfo.append(Line(self.cordInfo[line[0]],
+                                          self.cordInfo[line[-1]],
+                                          line[0], line[-1]))
+
+
+
+        # newLine = True
+        # sc = None
+        # data = []
+        # for i in range(len(self.cordInfo)):
+        #     if newLine:  # 선 새로 시작
+        #         sc = ScanCheckDotToLine(i, self)
+        #         if sc.isolation(self):
+        #             newLine = False
+        #     else:
+        #         endIndex = i
+        #         result = sc.update(endIndex, self)
+        #         if not result:
+        #             data.append(sc)
+        #             self.lineInfo.append(
+        #                 Line(self.cordInfo[sc.startIndex], self.cordInfo[sc.endIndex], sc.startIndex, sc.endIndex))
+        #             newLine = True
+        #
+        # # 처음/마지막 선 결합여부 확인
+        # if sc.update(0, self):
+        #     newEndIndex = data[0].endIndex
+        #     self.lineInfo.append(
+        #         Line(self.cordInfo[sc.startIndex], self.cordInfo[newEndIndex], sc.startIndex, newEndIndex))
+        #     self.lineInfo.pop(0)
+        # else:
+        #     self.lineInfo.append(
+        #         Line(self.cordInfo[sc.startIndex], self.cordInfo[sc.endIndex], sc.startIndex, sc.endIndex))
 
     # def makeLine2(self):
     #     '''

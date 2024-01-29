@@ -39,7 +39,7 @@ class Map:
         self.icpStep3_MergedData = []  # ICP알고리즘 결과 합쳐진 1개의 (x,y) list
 
         # My Algorithm
-        self.myStep1_makeLine = []  # 선 생성 후 데이터, 2개의 lineInfo List
+        self.myStep1_makeLine = [self.lineInfo, self.lineInfo]  # 선 생성 후 데이터, 2개의 lineInfo List
         self.myStep2_lineComb = []  # 선 조합 생성 후 데이터, 2개의 lineInfo List
         self.myStep3_MergedData = []  # 선 조합 결합 후 데이터, 1개의 lineInfo List
 

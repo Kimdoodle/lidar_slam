@@ -179,6 +179,10 @@ def draw_lidar_data():
         if MODE[1].get() == 2:
             printDot(mapdata.icpStep3_MergedData)
 
+    elif MODE[0].get() == 2: # MY
+        if MODE[1].get() == 0: # 기본 선 데이터
+            printLine(mapdata.myStep1_makeLine[0], 'black')
+
 
 # 점으로 그리기
 def printDot(logData: list, color='black'):
@@ -200,6 +204,29 @@ def printDot(logData: list, color='black'):
             CANVAS.create_rectangle(rotate_cord(x1, y1), rotate_cord(x2, y2),
                                     fill=color, outline=color)
 
+# 선으로 그리기
+def printLine(lineData:list, color='black'):
+        for index, lineInfo in enumerate(lineData):
+            x1 = CENTER_X + lineInfo.startX / DISTANCE_RATIO + MOVE_X
+            y1 = CENTER_Y + lineInfo.startY / DISTANCE_RATIO + MOVE_Y
+            x2 = CENTER_X + lineInfo.endX / DISTANCE_RATIO + MOVE_X
+            y2 = CENTER_Y + lineInfo.endY / DISTANCE_RATIO + MOVE_Y
+            newCord1 = rotate_cord(x1, y1)
+            newCord2 = rotate_cord(x2, y2)
+
+            CANVAS.create_line(newCord1, newCord2, width=2, fill=color)
+
+            # 선마다 번호 표시
+            if PRINT.get() == 1:
+                midpoint = midCord(newCord1, newCord2)
+                CANVAS.create_text(midpoint, text=str(index))
+
+        # 중심 화살표
+        CANVAS.create_line(
+            CENTER_X - 2 * RADIUS + MOVE_X, CENTER_Y + MOVE_Y,
+            CENTER_X + 2 * RADIUS + MOVE_X, CENTER_Y + MOVE_Y,
+            fill="red", arrow=tk.LAST,
+        )
 
     # if MODE == 'dot':
     #     # 점의 형태로 지도 생성
@@ -211,22 +238,7 @@ def printDot(logData: list, color='black'):
     #     for index, value in enumerate(CHECKED[1:]):
     #         if value.get() == 1:
     #             mapData.update(Scan(logData[index + 1]))
-    #     # 선의 형태로 지도 생성
-    #     color = 'red'
-    #     for index, lineInfo in enumerate(mapData.lineInfo):
-    #         x1 = CENTER_X + lineInfo.startX / DISTANCE_RATIO + MOVE_X
-    #         y1 = CENTER_Y + lineInfo.startY / DISTANCE_RATIO + MOVE_Y
-    #         x2 = CENTER_X + lineInfo.endX / DISTANCE_RATIO + MOVE_X
-    #         y2 = CENTER_Y + lineInfo.endY / DISTANCE_RATIO + MOVE_Y
-    #         newCord1 = rotate_cord(x1, y1)
-    #         newCord2 = rotate_cord(x2, y2)
-    # 
-    #         CANVAS.create_line(newCord1, newCord2, width=2, fill=color)
-    # 
-    #         # 선마다 번호 표시
-    #         if PRINT.get() == 1:
-    #             midpoint = midCord(newCord1, newCord2)
-    #             CANVAS.create_text(midpoint, text=str(index))
+    #
     # 
     # elif MODE == 'debug':
     #     # 선의 형태로 지도 생성
@@ -250,15 +262,7 @@ def printDot(logData: list, color='black'):
     #                 CANVAS.create_text(midpoint, text=str(index))
 
 
-    # 중심 화살표
-    CANVAS.create_line(
-        CENTER_X - 2 * RADIUS + MOVE_X,
-        CENTER_Y + MOVE_Y,
-        CENTER_X + 2 * RADIUS + MOVE_X,
-        CENTER_Y + MOVE_Y,
-        fill="red",
-        arrow=tk.LAST,
-    )
+
     # dist = 500 / DISTANCE_RATIO
     # canvas.create_oval(
     #     CENTER_X - dist, CENTER_Y - dist,
