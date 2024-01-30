@@ -9,7 +9,7 @@ import scanLog
 from calculate import check95, checkOutlier, removeOutlier, calculate_angle
 from compare import compare, move
 from icp import icp
-from scanCheck import ScanCheckDotToLine
+from scanCheck import Cluster
 from unit import Cord, Line, rotate_cord
 
 
@@ -24,6 +24,8 @@ class Scan:
         self.distInfo = []  # 중심에서 각 점까지의 거리 차이
         self.interInfo = []  # 각 점 사이의 거리차이
         self.funcInfo = []  # 두 점을 연결한 직선의 기울기행
+
+        self.clusters = []  # 클러스터링 정보
         self.lineInfo = []  # 완성된 직선 정보
 
         self.distOutlier = []
@@ -90,61 +92,72 @@ class Scan:
             2. 하나의 클러스터 내부에서 선 생성
         """
 
-        # 1. 클러스터링 - interInfo이용
-        mean = np.mean(np.array(self.interInfo))
-        std = np.std(np.array(self.interInfo))
-        length = len(self.interInfo)
+        # 1. 클러스터링
+        useInfo = self.distInfo
+        critValue = 1
+        funcMean = np.mean(np.array(useInfo))
+        std = np.std(np.array(useInfo))
+        length = len(useInfo)
 
-        clusters = []
-        cluster = []
+        cluster = Cluster(0, length, critValue)
         for index in range(length):
-            zScore = (self.interInfo[index] - mean) / std
-            cluster.append(self.cordInfo[index])
-            if abs(zScore) > 1:
-                if len(cluster) >= 5:
-                    clusters.append(cluster)
-                cluster = []
-        if cluster: clusters.append(cluster)
+            if cluster is None:
+                cluster = Cluster(index, length, critValue)
+            res = cluster.update(index, useInfo[index], funcMean, std)
+            if not res:
+                self.clusters.append(cluster)
+                cluster = None
 
-        if (self.interInfo[-1] - mean) / std <= 1:
-            clusters[0] += clusters[-1]
-            clusters.pop()
+        if cluster is not None:
+            self.clusters.append(cluster)
+
+        # 첫 데이터와 마지막 데이터 결합여부
+        if abs((useInfo[-1]-funcMean)/std) <= critValue:
+            self.clusters[0].merge(self.clusters[-1].sIndex, self.clusters[0].eIndex)
+
+        for cluster in self.clusters:
+            cluster.visualize(self.cordInfo)
+
 
         # 2. 각 클러스터 별 선 생성
-        for cluster in clusters:
-            sIndex = self.cordInfo.index(cluster[0])
-            eIndex = self.cordInfo.index(cluster[-1])
-            if sIndex > eIndex:
-                sIndex -= len(self.cordInfo)
+        for cluster in self.clusters:
+            sIndex = cluster.sIndex
+            eIndex = cluster.eIndex
 
-
-            # 기울기 정보 이상치를 기준으로 선 구분 및 생성
+            # 기울기와 간격 이상치를 기준으로 선 구분 및 생성
             line = []
-            sum = 0
-            mean = self.funcInfo[sIndex]
+            funcSum = 0
+            funcMean = self.funcInfo[sIndex]
+            interSum = 0
+            interMean = self.interInfo[sIndex]
             pos = sIndex
             while pos <= eIndex:
-                try:
-                    func = self.funcInfo[pos]
-                    line.append(pos)
-                    if calculate_angle(mean, func) <= 10:
-                        sum += func
-                        mean = sum/len(line)
-                    else:
-                        sum = 0
-                        mean = func
+                func = self.funcInfo[pos]
+                inter = self.interInfo[pos]
+                line.append(pos)
+                if (calculate_angle(funcMean, func) <= 10) & (inter <= 2*interMean):
+                    funcSum += func
+                    funcMean = funcSum/len(line)
+                    interSum += inter
+                    interMean = interSum/len(line)
+                else:
+                    funcSum = 0
+                    funcMean = func
+                    interMean = inter
+                    interSum = 0
+                    if line[0] != line[-1]:
                         self.lineInfo.append(Line(self.cordInfo[line[0]],
                                                   self.cordInfo[line[-1]],
                                                   line[0], line[-1]))
-                        line = []
-                    pos += 1
-                except Exception as e:
-                    print(e)
+                    line = []
+                pos += 1
 
             if line:
                 self.lineInfo.append(Line(self.cordInfo[line[0]],
                                           self.cordInfo[line[-1]],
                                           line[0], line[-1]))
+
+        # 3. 클러스터 내 선 묶음
 
 
 

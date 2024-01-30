@@ -1,8 +1,9 @@
 # 스캔 데이터의 좌표, 선 클래스
 from math import cos, radians, sin
-
+import warnings
 import numpy as np
 
+warnings.filterwarnings("error", category=RuntimeWarning)
 
 # 좌표
 class Cord:
@@ -64,12 +65,18 @@ class Line:
         self.endX = cordII.x
         self.endY = cordII.y
         self.func = self.calFunc()
+        self.mid: tuple = self.calMid()
     
     def calFunc(self):
-        return (self.endY - self.startY)/(self.endX - self.startX)
+        try:
+            # print(self.startX, self.startY, self.endX, self.endY)
+            a = (self.endY - self.startY)/(self.endX - self.startX)
+            return a
+        except RuntimeWarning as rw:
+            print("runtimewarning")
     
     def calMid(self):
-        return ((self.endX - self.startX)/2, (self.endY - self.startY)/2)
+        return (self.endX - self.startX) / 2, (self.endY - self.startY) / 2
     
     def toString(self):
-        return(f'{self.startX}, {self.startY}, {self.endX}, {self.endY}')
+        return f'{self.startX}, {self.startY}, {self.endX}, {self.endY}'

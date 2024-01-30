@@ -20,12 +20,13 @@ from icp import best_fit_transform
 class Map:
     def __init__(self, scan: Scan):
         self.initScan = scan
-        self.cordInfo = scan.cordInfo
-        self.cordXY = scan.cordXY
-        self.angleInfo = scan.angleInfo
-        self.distInfo = scan.distInfo
-        self.interInfo = scan.interInfo
-        self.funcInfo = scan.funcInfo  # 각 line의 기울기 정보
+        # self.cordInfo = scan.cordInfo
+        # self.cordXY = scan.cordXY
+        # self.angleInfo = scan.angleInfo
+        # self.distInfo = scan.distInfo
+        # self.interInfo = scan.interInfo
+        # self.funcInfo = scan.funcInfo  # 각 line의 기울기 정보
+
         self.lineInfo = scan.lineInfo  # 각 line정보
         self.position = (0, 0, 0)  # odometry
 
@@ -39,78 +40,86 @@ class Map:
         self.icpStep3_MergedData = []  # ICP알고리즘 결과 합쳐진 1개의 (x,y) list
 
         # My Algorithm
-        self.myStep1_makeLine = [self.lineInfo, self.lineInfo]  # 선 생성 후 데이터, 2개의 lineInfo List
-        self.myStep2_lineComb = []  # 선 조합 생성 후 데이터, 2개의 lineInfo List
+        self.myStep0_cluster = [self.initScan.clusters] # 클러스터링 데이터
+        self.myStep1_makeLine = [self.lineInfo]  # 선 생성 후 각각의 선 데이터
+        self.myStep2_lineComp = []  # 선 조합 생성 후 데이터, 2개의 lineInfo List
         self.myStep3_MergedData = []  # 선 조합 결합 후 데이터, 1개의 lineInfo List
 
-    # 단순 데이터 추가
-    def simpleAdd(self, data):
-        self.scanDataLog.append(Scan(data))
 
     # 새로운 데이터를 이용하여 업데이트
     def update(self, data):
-        if isinstance(data, list):
-            data = Scan(data)
+        scanData = Scan(data)
+        self.scanDataLog.append(scanData)
+        self.myStep0_cluster.append(scanData.clusters)
+        self.myStep1_makeLine.append(scanData.lineInfo)
 
         # ICP알고리즘 적용
-        self.calculate_ICP(data)
+        # self.calculate_ICP(data)
 
-        # My Algorithm적용
-        self.calculate_MyAlgol(data)
-
-    # ICP알고리즘
-    def calculate_ICP(self, data: Scan):
-        # Step1 - 데이터 다운샘플링
-        # 2개의 cordInfo를 비교하여 큰 쪽을 다운샘플링
-        flag = 'self'  # flag - 어느쪽을 다운샘플링했는가를 구별
-        if len(self.cordInfo) > len(data.cordInfo):
-            new = downSample(self.cordInfo, self.angleInfo, len(self.cordInfo) - len(data.cordInfo))
-            new = [(cord.x, cord.y) for cord in new]
-            self.icpStep1_DownSample = [new, [(cord.x, cord.y) for cord in data.cordInfo]]
-        else:
-            flag = 'new'
-            new = downSample(data.cordInfo, data.angleInfo, len(data.cordInfo) - len(self.cordInfo))
-            new = [(cord.x, cord.y) for cord in new]
-            self.icpStep1_DownSample = [new, [(cord.x, cord.y) for cord in self.cordInfo]]
-
-        # Step2 - ICP알고리즘 계산
-        array1 = np.array(self.icpStep1_DownSample[0])
-        array2 = np.array(self.icpStep1_DownSample[1])
-        if flag != 'self':
-            temp = array1
-            array1 = array2
-            array2 = temp
-            # array1에 array2를 매칭
-        T, R, t = best_fit_transform(array2, array1)
-        self.icpStep2_ICPResult = (T, R, t)
-
-        # Step3 - ICP알고리즘 적용
-        newArray2 = np.dot(T, np.vstack((array2.T, np.ones(array2.shape[0])))).T[:, :2]
-        self.icpStep3_MergedData = array1.tolist() + newArray2.tolist()
-
+#     # ICP알고리즘
+#     def calculate_ICP(self, data: Scan):
+#         # Step1 - 데이터 다운샘플링
+#         # 2개의 cordInfo를 비교하여 큰 쪽을 다운샘플링
+#         flag = 'self'  # flag - 어느쪽을 다운샘플링했는가를 구별
+#         if len(self.cordInfo) > len(data.cordInfo):
+#             new = downSample(self.cordInfo, self.angleInfo, len(self.cordInfo) - len(data.cordInfo))
+#             new = [(cord.x, cord.y) for cord in new]
+#             self.icpStep1_DownSample = [new, [(cord.x, cord.y) for cord in data.cordInfo]]
+#         else:
+#             flag = 'new'
+#             new = downSample(data.cordInfo, data.angleInfo, len(data.cordInfo) - len(self.cordInfo))
+#             new = [(cord.x, cord.y) for cord in new]
+#             self.icpStep1_DownSample = [new, [(cord.x, cord.y) for cord in self.cordInfo]]
+#
+#         # Step2 - ICP알고리즘 계산
+#         array1 = np.array(self.icpStep1_DownSample[0])
+#         array2 = np.array(self.icpStep1_DownSample[1])
+#         if flag != 'self':
+#             temp = array1
+#             array1 = array2
+#             array2 = temp
+#             # array1에 array2를 매칭
+#         T, R, t = best_fit_transform(array2, array1)
+#         self.icpStep2_ICPResult = (T, R, t)
+#
+#         # Step3 - ICP알고리즘 적용
+#         newArray2 = np.dot(T, np.vstack((array2.T, np.ones(array2.shape[0])))).T[:, :2]
+#         self.icpStep3_MergedData = array1.tolist() + newArray2.tolist()
+#
     # My Algorithm
-    def calculate_MyAlgol(self, data: Scan):
-        # Step1 - 각 데이터의 선 생성
-        self.myStep1_makeLine = [self.lineInfo, data.lineInfo]
+    # Step2 - 선 조합 생성
+    def my1_lineComp(self, orig, new):
+        # 중심점을 이용해 최단거리 점 2개를 검색
+        origMid = [line.mid for line in orig]
+        newMid = [line.mid for line in new]
+        comps = []
+        tree = cKDTree(origMid)
+        for mid in newMid:
+            indexes = tree.query(mid, k=2)[1]
+            # 기울기 차가 적은 데이터를 선택함
+            a = calculate_angle(mid.func, orig[indexes[0]].func)
+            b = calculate_angle(mid.func, orig[indexes[1]].func)
+            comps.append(indexes[0] if a<b else indexes[1])
 
-        # Step2 - 선 조합 생성
-        # Todo
-
-        # Step3 - 선 조합 결합
-        # Todo
+        print(comps)
 
 
-# ICP알고리즘 - 데이터 다운샘플링
-def downSample(cordInfo: list, angleInfo: list, targetCount: int):
-    # 좌우 각도차이를 비교하여 양쪽 값이 가장 작은 데이터부터 제거
-    angleMean = []
-    for index, angle in enumerate(angleInfo):
-        prev = angleInfo[index - 1]
-        curr = angle
-        angleMean.append((prev + curr) / 2)
 
-    deletes = sorted(range(len(angleMean)), key=lambda k: angleMean[k])[:targetCount]
-    return [cordInfo[i] for i in range(len(angleMean)) if i not in deletes]
+
+
+#
+#
+# # ICP알고리즘 - 데이터 다운샘플링
+# def downSample(cordInfo: list, angleInfo: list, targetCount: int):
+#     # 좌우 각도차이를 비교하여 양쪽 값이 가장 작은 데이터부터 제거
+#     angleMean = []
+#     for index, angle in enumerate(angleInfo):
+#         prev = angleInfo[index - 1]
+#         curr = angle
+#         angleMean.append((prev + curr) / 2)
+#
+#     deletes = sorted(range(len(angleMean)), key=lambda k: angleMean[k])[:targetCount]
+#     return [cordInfo[i] for i in range(len(angleMean)) if i not in deletes]
 
     # # 새로운 스캔 데이터가 입력되었을 때 분석，업데이트
     # '''

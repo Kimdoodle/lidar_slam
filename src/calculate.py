@@ -5,7 +5,7 @@ import numpy as np
 
 
 # 두 좌표의 거리 반환
-def calculate_dist(cord1:tuple, cord2:tuple) -> tuple:
+def calculate_dist(cord1:tuple, cord2:tuple) -> float:
     return sqrt((cord1[0]-cord2[0])**2 + (cord1[1]-cord2[1])**2)
 
 # 두 직선이 이루는 각을 계산
@@ -101,3 +101,4 @@ def get_perpendicular(cord1, func, funcCord):
 
     return distance
 
+# 점(x,y)에서 직선에 내린 수선의 길이를 계산

@@ -21,7 +21,7 @@ MODE = [tk.IntVar(value=0), tk.IntVar(value=0)]  # 모드, 상세 단계 번호
 MODE_NAMES = ['기본', '실험1', '실험2']
 MODES = [['점 표시'],
          ['다운샘플링', 'ICP', '결합'],
-         ['선 생성', '선 조합', '결합']]
+         ['클러스터링', '선 생성', '선 조합', '결합']]
 BUTTONS = [[], [], []]
 PRINT = tk.IntVar(value=0)
 
@@ -157,17 +157,26 @@ def draw_lidar_data():
     # print(f"MOVE_X: {MOVE_X}, MOVE_Y: {MOVE_Y}, ROTATE: {ROTATE}")
 
     logData = loadScanLog()[1]
-    mapdata = Map(Scan(logData[0]))  # 기본 지도 데이터 정의
+
+    # 기본 지도 데이터 정의
+    mapdata = None
     for index, checkData in enumerate(CHECKED):
         if index == 0: continue
         if checkData.get() == 1:
-            mapdata.simpleAdd(logData[index])
-            mapdata.update(logData[index])
-    if MODE[0].get() == 0:  # 기본
+            if mapdata is None:
+                mapdata = Map(Scan(logData[index]))
+            else:
+                mapdata.update(logData[index])
+    if mapdata is None:
+        mapdata = Map(Scan(logData[0]))
+
+
+    # 기본
+    if MODE[0].get() == 0:
         for i, scanLog in enumerate(mapdata.scanDataLog):
             printDot(scanLog.cordInfo, COLOR[i])
 
-            # Todo: 1/28
+    # Todo: pass
     elif MODE[0].get() == 1:  # ICP
         if MODE[1].get() == 0:  # 다운샘플링 - 2개의 (x,y) list
             printDot(mapdata.icpStep1_DownSample[0])
@@ -179,10 +188,24 @@ def draw_lidar_data():
         if MODE[1].get() == 2:
             printDot(mapdata.icpStep3_MergedData)
 
-    elif MODE[0].get() == 2: # MY
-        if MODE[1].get() == 0: # 기본 선 데이터
-            printLine(mapdata.myStep1_makeLine[0], 'black')
+    # MY
+    elif MODE[0].get() == 2:
+        if MODE[1].get() == 0:  # 클러스터링 데이터
+            for clusters in mapdata.myStep0_cluster:
+                for index, cluster in enumerate(clusters):
+                    printDot(cluster.cordInfo, COLOR[index])
 
+        if MODE[1].get() == 1:  # 선 생성
+            for index, line in enumerate(mapdata.myStep1_makeLine):
+                printLine(line, COLOR[index])
+
+        if MODE[1].get() == 2:  # 선 조합
+            if sum(var.get() for var in CHECKED) >= 2:
+                temp = [index for index, var in enumerate(CHECKED) if var.get() == 1]
+                mapdata.my1_lineComp(mapdata.myStep1_makeLine[0], mapdata.myStep1_makeLine[1])
+
+        if MODE[1].get() == 3:  # 선 결합
+            pass
 
 # 점으로 그리기
 def printDot(logData: list, color='black'):
@@ -310,10 +333,10 @@ if __name__ == "__main__":
         match = logName[logIndex].split("-")
         button = tk.Checkbutton(select, text=match[-1].split(".")[0],
                                 command=lambda i=logIndex: modify_check(i))
-        if logIndex == 0:
-            # 0번 데이터 항상 활성화
-            button.configure(state='disabled', variable=intvalue)
-            intvalue.set(1)
+        # if logIndex == 0:
+        #     # 0번 데이터 항상 활성화
+        #     button.configure(state='disabled', variable=intvalue)
+        #     intvalue.set(1)
 
         # print(f"index:{logIndex}, intvalue:{intvalue}")
         button.grid(row=0, column=logIndex, padx=10)
