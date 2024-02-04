@@ -2,6 +2,7 @@
 from math import cos, radians, sin
 import warnings
 import numpy as np
+from calculate import calculate_move
 
 warnings.filterwarnings("error", category=RuntimeWarning)
 
@@ -43,16 +44,6 @@ class Cord:
     def __ge__(self, other):
         return (self.x, self.y) >= (other.x, other.y)
 
-# 좌표의 회전 계산
-def rotate_cord(x, y, angle):
-    # x' = xcos - ysin, y' = xsin + ycos
-    sin0 = sin(radians(angle))
-    cos0 = cos(radians(angle))
-    x2 = x*cos0 - y*sin0
-    y2 = x*sin0 + y*cos0
-    
-    return (x2, y2)
-
 # 선
 class Line:
     def __init__(self, cordI:Cord, cordII:Cord, indexI:int, indexII:int):
@@ -80,3 +71,10 @@ class Line:
     
     def toString(self):
         return f'{self.startX}, {self.startY}, {self.endX}, {self.endY}'
+
+    # 선을 각도/이동벡터 만큼 움직임
+    def move(self, angle, t):
+        self.startX, self.startY = calculate_move(self.startX, self.startY, t[0], t[1], angle)
+        self.endX, self.endY = calculate_move(self.endX, self.endY, t[0], t[1], angle)
+        self.func = self.calFunc()
+        self.mid = self.calMid()

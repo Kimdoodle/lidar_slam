@@ -9,11 +9,11 @@ from scipy.spatial import cKDTree
 import scandata
 import scanLog
 from calculate import (calculate_angle, calculate_dist, check95, checkFunc,
-                       newCord, removeOutlier)
+                       newCord, removeOutlier, calculateVariance, calculate_move)
 from scanCheck import MoveLine, DataCheck
 from scandata import Scan
 from unit import Cord, Line
-from icp import best_fit_transform
+from icp import icp, decompose_ICP
 
 
 # 지도
@@ -40,11 +40,16 @@ class Map:
         self.icpStep3_MergedData = []  # ICP알고리즘 결과 합쳐진 1개의 (x,y) list
 
         # My Algorithm
-        self.myStep0_cluster = [self.initScan.clusters] # 클러스터링 데이터
+        self.myStep0_cluster = [self.initScan.clusters]  # 클러스터링 데이터
         self.myStep1_makeLine = [self.lineInfo]  # 선 생성 후 각각의 선 데이터
-        self.myStep2_lineComp = []  # 선 조합 생성 후 데이터, 2개의 lineInfo List
+        self.myStep2_ICPResult = []  # 선 조합 생성 후 데이터, 2개의 lineInfo List
         self.myStep3_MergedData = []  # 선 조합 결합 후 데이터, 1개의 lineInfo List
 
+        self.myStep99_temp = []  # 더미데이터
+
+        # 기타 변수
+        self.rotateLog = 0
+        self.moveLog = [0, 0]
 
     # 새로운 데이터를 이용하여 업데이트
     def update(self, data):
@@ -56,56 +61,81 @@ class Map:
         # ICP알고리즘 적용
         # self.calculate_ICP(data)
 
-#     # ICP알고리즘
-#     def calculate_ICP(self, data: Scan):
-#         # Step1 - 데이터 다운샘플링
-#         # 2개의 cordInfo를 비교하여 큰 쪽을 다운샘플링
-#         flag = 'self'  # flag - 어느쪽을 다운샘플링했는가를 구별
-#         if len(self.cordInfo) > len(data.cordInfo):
-#             new = downSample(self.cordInfo, self.angleInfo, len(self.cordInfo) - len(data.cordInfo))
-#             new = [(cord.x, cord.y) for cord in new]
-#             self.icpStep1_DownSample = [new, [(cord.x, cord.y) for cord in data.cordInfo]]
-#         else:
-#             flag = 'new'
-#             new = downSample(data.cordInfo, data.angleInfo, len(data.cordInfo) - len(self.cordInfo))
-#             new = [(cord.x, cord.y) for cord in new]
-#             self.icpStep1_DownSample = [new, [(cord.x, cord.y) for cord in self.cordInfo]]
-#
-#         # Step2 - ICP알고리즘 계산
-#         array1 = np.array(self.icpStep1_DownSample[0])
-#         array2 = np.array(self.icpStep1_DownSample[1])
-#         if flag != 'self':
-#             temp = array1
-#             array1 = array2
-#             array2 = temp
-#             # array1에 array2를 매칭
-#         T, R, t = best_fit_transform(array2, array1)
-#         self.icpStep2_ICPResult = (T, R, t)
-#
-#         # Step3 - ICP알고리즘 적용
-#         newArray2 = np.dot(T, np.vstack((array2.T, np.ones(array2.shape[0])))).T[:, :2]
-#         self.icpStep3_MergedData = array1.tolist() + newArray2.tolist()
-#
+    #     # ICP알고리즘
+    #     def calculate_ICP(self, data: Scan):
+    #         # Step1 - 데이터 다운샘플링
+    #         # 2개의 cordInfo를 비교하여 큰 쪽을 다운샘플링
+    #         flag = 'self'  # flag - 어느쪽을 다운샘플링했는가를 구별
+    #         if len(dself.cordInfo) > len(data.cordInfo):
+    #             new = downSample(self.cordInfo, self.angleInfo, len(self.cordInfo) - len(data.cordInfo))
+    #             new = [(cord.x, cord.y) for cord in new]
+    #             self.icpStep1_DownSample = [new, [(cord.x, cord.y) for cord in data.cordInfo]]
+    #         else:
+    #             flag = 'new'
+    #             new = downSample(data.cordInfo, data.angleInfo, len(data.cordInfo) - len(self.cordInfo))
+    #             new = [(cord.x, cord.y) for cord in new]
+    #             self.icpStep1_DownSample = [new, [(cord.x, cord.y) for cord in self.cordInfo]]
+    #
+    #         # Step2 - ICP알고리즘 계산
+    #         array1 = np.array(self.icpStep1_DownSample[0])
+    #         array2 = np.array(self.icpStep1_DownSample[1])
+    #         if flag != 'self':
+    #             temp = array1
+    #             array1 = array2
+    #             array2 = temp
+    #             # array1에 array2를 매칭
+    #         T, R, t = best_fit_transform(array2, array1)
+    #         self.icpStep2_ICPResult = (T, R, t)
+    #
+    #         # Step3 - ICP알고리즘 적용
+    #         newArray2 = np.dot(T, np.vstack((array2.T, np.ones(array2.shape[0])))).T[:, :2]
+    #         self.icpStep3_MergedData = array1.tolist() + newArray2.tolist()
+    #
     # My Algorithm
+    
+    # ICP알고리즘을 이용해 orig와 new간 선 조합의 이동
+    def my1_lineICP(self, orig, new):
+        origMid = [line.mid for line in orig]
+        newMid = [line.mid for line in new]
+
+        tree = cKDTree(origMid)
+        comps = [tree.query(mid, k=1)[1] for mid in newMid]
+        newMid = [newMid[ele] for ele in comps]
+
+        # comps와 newMid에 ICP적용하여 회전, 이동값 도출
+        T, distances, i = icp(comps, newMid)
+        angle, t = decompose_ICP(T)
+
+        # new의 모든 선에 대하여 회전, 이동 시행
+        rotatedLines = [line.move(angle, t) for line in new]
+        self.myStep2_ICPResult = [orig, rotatedLines]
+
+
     # Step2 - 선 조합 생성
     def my1_lineComp(self, orig, new):
         # 중심점을 이용해 최단거리 점 2개를 검색
         origMid = [line.mid for line in orig]
         newMid = [line.mid for line in new]
-        comps = []
+        compValue = []
+        compIndex = []
         tree = cKDTree(origMid)
         for mid in newMid:
             indexes = tree.query(mid, k=2)[1]
-            # 기울기 차가 적은 데이터를 선택함
-            a = calculate_angle(mid.func, orig[indexes[0]].func)
-            b = calculate_angle(mid.func, orig[indexes[1]].func)
-            comps.append(indexes[0] if a<b else indexes[1])
+            # 둘 중 적절한 값을 선택
+            valueA = calculate_angle(mid.func, orig[indexes[0]].func)
+            valueB = calculate_angle(mid.func, orig[indexes[1]].func)
+            if valueA < valueB:
+                compValue.append(valueA)
+                compIndex.append(indexes[0])
+            else:
+                compValue.append(valueB)
+                compIndex.append(indexes[1])
 
-        print(comps)
+        # 인덱스 순서는 [1,1,2,2,...]와 같이 순서대로 정렬되어야함
+        # 이를 따르지 않는 경우를 검색하여 수정함
 
-
-
-
+        # 1. 각도 조정 이상치를 선별(신규 데이터)
+        # 2. 위치 이상치를 선별(기존 데이터)
 
 #
 #
@@ -121,100 +151,100 @@ class Map:
 #     deletes = sorted(range(len(angleMean)), key=lambda k: angleMean[k])[:targetCount]
 #     return [cordInfo[i] for i in range(len(angleMean)) if i not in deletes]
 
-    # # 새로운 스캔 데이터가 입력되었을 때 분석，업데이트
-    # '''
-    #     scanLog에는 각 스캔 데이터의 원본 좌표값이 삽입됨
-    #     compare로 병합을 비교, 병합된 점 데이터는 cordInfo에 삽입됨
-    #     병합 후 line을 재계산하여 데이터를 lineInfo와 funcInfo에 삽입함
-    # '''
-    # # 데이터 추가
-    # def update(self, scan: Scan):
-    #     # 원본 좌표값, 직선 데이터 로그에 삽입
-    #     self.scanLog.append(scan)
-    #     self.lineLog.append(scan.lineInfo)
-    #
-    # # 선택한 데이터까지 병합
-    # def merge(self, index):
-    #     # Todo: 위치 업데이트
-    #     # self.posLog.append(self.position)
-    #     # self.position = self.findSimiliar(scan)
-    #
-    #     # 병합
-    #     for i in range(len(index)):
-    #         if i == 0:
-    #             self.cordInfo = self.scanLog[i].cordInfo
-    #         else:
-    #             self.updateICP(self, self.scanLog[i])
-    #
-    # # line 데이터를 기반으로 비교, 병합
-    # def compare(self, scan: Scan):
-    #     '''기존(병합될)데이터'''
-    #     mapLine = self.lineInfo  # 직선 정보
-    #     mapFunc = [line.func for line in mapLine]  # 각 직선의 기울기 정보
-    #     mapMid = [((line.startX + line.endX) / 2, (line.startY + line.endY) / 2) for line in
-    #               self.lineInfo]  # 직선의 중점 리스트
-    #     '''신규(병합할)데이터'''
-    #     scanLine = scan.lineInfo
-    #     scanFunc = [line.func for line in scanLine]
-    #     scanMid = [((line.startX + line.endX) / 2, (line.startY + line.endY) / 2) for line in scan.lineInfo]
-    #
-    #     # 신규 중점과 기존 데이터의 중점 조합
-    #     # 거리와 기울기를 비교함
-    #     # 근접한 좌표 2개를 검색
-    #     def find(tuple, kdTree):
-    #         _, indexes = kdTree.query(tuple, k=2)
-    #         return indexes
-    #
-    #     comp = []
-    #     kdTree = cKDTree(mapMid)
-    #     for index, mid in enumerate(scanMid):
-    #         partners = find(mid, kdTree)
-    #         # 2개의 직선 중 기울기가 비슷한 쪽으로 결정
-    #         sFunc = scanFunc[index]
-    #         mFunc1 = calculate_angle(sFunc, mapFunc[partners[0]])
-    #         mFunc2 = calculate_angle(sFunc, mapFunc[partners[1]])
-    #         # 두 직선 모두 적합하지 않은 경우도 고려
-    #         if (mFunc1 > 15) & (mFunc2 > 15):
-    #             comp.append(-99)
-    #         else:
-    #             result = 1 if mFunc1 < mFunc2 else 2
-    #             comp.append(partners[0] if result == 1 else partners[1])
-    #
-    #     # 같은 인덱스를 가리키는 선들은 병합
-    #     mergedLine = []
-    #     compareIndex = 0
-    #     for i in comp:
-    #         if i != -99:
-    #             compareIndex = i
-    #             break
-    #     temp = []
-    #     for i, index in enumerate(comp):
-    #         if (len(mergedLine) == 0) & (index == -99):
-    #             continue
-    #
-    #         if (index != compareIndex) & (len(temp) != 0):
-    #             # 병합
-    #             start = temp[0]
-    #             end = temp[-1]
-    #             mergedLine.append((index, Line(start.cordI, end.cordII, start.sindex, end.eindex)))
-    #             temp = []
-    #             compareIndex = index
-    #
-    #         if index != -99:
-    #             temp.append(scanLine[i])
-    #     start = temp[0]
-    #     end = temp[-1]
-    #     mergedLine.append((index, Line(start.cordI, end.cordII, start.sindex, end.eindex)))
-    #
-    #     # 선 데이터 이동 및 추가
-    #     lines = []
-    #     moveInfo = MoveLine()
-    #     for index, newLine in mergedLine:
-    #         if index == -99: continue
-    #         self.lineInfo[index] = moveInfo.update(self.lineInfo[index], newLine)
-    #     for index, newLine in mergedLine:
-    #         if index == -99:
-    #             self.lineInfo.append(moveInfo.justMove(newLine))
+# # 새로운 스캔 데이터가 입력되었을 때 분석，업데이트
+# '''
+#     scanLog에는 각 스캔 데이터의 원본 좌표값이 삽입됨
+#     compare로 병합을 비교, 병합된 점 데이터는 cordInfo에 삽입됨
+#     병합 후 line을 재계산하여 데이터를 lineInfo와 funcInfo에 삽입함
+# '''
+# # 데이터 추가
+# def update(self, scan: Scan):
+#     # 원본 좌표값, 직선 데이터 로그에 삽입
+#     self.scanLog.append(scan)
+#     self.lineLog.append(scan.lineInfo)
+#
+# # 선택한 데이터까지 병합
+# def merge(self, index):
+#     # Todo: 위치 업데이트
+#     # self.posLog.append(self.position)
+#     # self.position = self.findSimiliar(scan)
+#
+#     # 병합
+#     for i in range(len(index)):
+#         if i == 0:
+#             self.cordInfo = self.scanLog[i].cordInfo
+#         else:
+#             self.updateICP(self, self.scanLog[i])
+#
+# # line 데이터를 기반으로 비교, 병합
+# def compare(self, scan: Scan):
+#     '''기존(병합될)데이터'''
+#     mapLine = self.lineInfo  # 직선 정보
+#     mapFunc = [line.func for line in mapLine]  # 각 직선의 기울기 정보
+#     mapMid = [((line.startX + line.endX) / 2, (line.startY + line.endY) / 2) for line in
+#               self.lineInfo]  # 직선의 중점 리스트
+#     '''신규(병합할)데이터'''
+#     scanLine = scan.lineInfo
+#     scanFunc = [line.func for line in scanLine]
+#     scanMid = [((line.startX + line.endX) / 2, (line.startY + line.endY) / 2) for line in scan.lineInfo]
+#
+#     # 신규 중점과 기존 데이터의 중점 조합
+#     # 거리와 기울기를 비교함
+#     # 근접한 좌표 2개를 검색
+#     def find(tuple, kdTree):
+#         _, indexes = kdTree.query(tuple, k=2)
+#         return indexes
+#
+#     comp = []
+#     kdTree = cKDTree(mapMid)
+#     for index, mid in enumerate(scanMid):
+#         partners = find(mid, kdTree)
+#         # 2개의 직선 중 기울기가 비슷한 쪽으로 결정
+#         sFunc = scanFunc[index]
+#         mFunc1 = calculate_angle(sFunc, mapFunc[partners[0]])
+#         mFunc2 = calculate_angle(sFunc, mapFunc[partners[1]])
+#         # 두 직선 모두 적합하지 않은 경우도 고려
+#         if (mFunc1 > 15) & (mFunc2 > 15):
+#             comp.append(-99)
+#         else:
+#             result = 1 if mFunc1 < mFunc2 else 2
+#             comp.append(partners[0] if result == 1 else partners[1])
+#
+#     # 같은 인덱스를 가리키는 선들은 병합
+#     mergedLine = []
+#     compareIndex = 0
+#     for i in comp:
+#         if i != -99:
+#             compareIndex = i
+#             break
+#     temp = []
+#     for i, index in enumerate(comp):
+#         if (len(mergedLine) == 0) & (index == -99):
+#             continue
+#
+#         if (index != compareIndex) & (len(temp) != 0):
+#             # 병합
+#             start = temp[0]
+#             end = temp[-1]
+#             mergedLine.append((index, Line(start.cordI, end.cordII, start.sindex, end.eindex)))
+#             temp = []
+#             compareIndex = index
+#
+#         if index != -99:
+#             temp.append(scanLine[i])
+#     start = temp[0]
+#     end = temp[-1]
+#     mergedLine.append((index, Line(start.cordI, end.cordII, start.sindex, end.eindex)))
+#
+#     # 선 데이터 이동 및 추가
+#     lines = []
+#     moveInfo = MoveLine()
+#     for index, newLine in mergedLine:
+#         if index == -99: continue
+#         self.lineInfo[index] = moveInfo.update(self.lineInfo[index], newLine)
+#     for index, newLine in mergedLine:
+#         if index == -99:
+#             self.lineInfo.append(moveInfo.justMove(newLine))
 
 ###########################################################################
 # # 각 선마다 중간지점의 값과 기울기  데이터로 비교함

@@ -122,6 +122,14 @@ def icp(A, B, init_pose=None, max_iterations=20, tolerance=0.001):
 
     return T, distances, i
 
+# 자체 코드 - T를 회전각도와 이동벡터로 분해
+def decompose_ICP(T):
+    R = T[:2, :2]
+    t = T[:2, 2]
+    angle = -np.arctan2(R[0,1], R[0,0]) * (180/np.pi)
+    return angle, t
+
+
 if __name__ == '__main__':
     # 예시
     A = np.array([[0, 0], [3, 0.1]])

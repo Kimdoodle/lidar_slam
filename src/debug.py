@@ -199,10 +199,11 @@ def draw_lidar_data():
             for index, line in enumerate(mapdata.myStep1_makeLine):
                 printLine(line, COLOR[index])
 
-        if MODE[1].get() == 2:  # 선 조합
-            if sum(var.get() for var in CHECKED) >= 2:
-                temp = [index for index, var in enumerate(CHECKED) if var.get() == 1]
-                mapdata.my1_lineComp(mapdata.myStep1_makeLine[0], mapdata.myStep1_makeLine[1])
+        if MODE[1].get() == 2:  # ???
+            mapdata.my1_lineICP(mapdata.myStep1_makeLine[0], mapdata.myStep1_makeLine[1])
+            for index, lines in enumerate(mapdata.myStep2_ICPResult):
+                for line in lines:
+                    printLine(line, COLOR[index])
 
         if MODE[1].get() == 3:  # 선 결합
             pass

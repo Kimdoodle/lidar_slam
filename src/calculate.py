@@ -60,6 +60,12 @@ def check95(mean, std):
 
     return min, max
 
+# 데이터의 분산을 계산
+def calculateVariance(data):
+    length = len(data)
+    mean = sum(data)/n
+    return sum((x-mean)**2 for x in data) / length
+
 # 두 좌표의 중점 반환
 def midCord(c1:tuple, c2:tuple) -> tuple:
     return ((c1[0]+c2[0])/2, (c1[1]+c2[1])/2)

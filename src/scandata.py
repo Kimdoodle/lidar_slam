@@ -10,7 +10,7 @@ from calculate import check95, checkOutlier, removeOutlier, calculate_angle
 from compare import compare, move
 from icp import icp
 from scanCheck import Cluster
-from unit import Cord, Line, rotate_cord
+from unit import Cord, Line
 
 
 # 스캔 데이터
