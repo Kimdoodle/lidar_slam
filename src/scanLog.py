@@ -4,9 +4,12 @@ import os
 import re
 import time
 import traceback
+
 try:
-    import serial
     import fcntl
+
+    import serial
+
     from rplidar import RPLidar
 except:
     pass
@@ -25,7 +28,7 @@ def saveScanLog():
             data = scandata.Scan(scan)
             current_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
             filename = f'log_{current_time}.txt'
-            filedirectory = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log', filename)
+            filedirectory = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log2', filename)
 
             # 파일을 현재 디렉토리에 저장
             with open(filedirectory, 'w') as file:
@@ -44,9 +47,11 @@ def saveScanLog():
         lidar.disconnect()
 
 # return [logFileNames, logData]
-def loadScanLog(path=os.path.dirname(os.path.abspath(__file__))+"/log") -> list:
+def loadScanLog(path="/log") -> list:
     try:
         # 파일 목록을 구성
+        base = os.path.dirname(os.path.abspath(__file__))
+        path = base + path
         fileList = sorted(os.listdir(path))
         
         # 파일 데이터 반환
@@ -106,4 +111,4 @@ def saveCalLog(scan):
 
 
 if __name__ == '__main__':
-    print(loadScanLog()[1])
+    saveScanLog()

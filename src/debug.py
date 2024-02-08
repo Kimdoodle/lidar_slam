@@ -156,7 +156,7 @@ def draw_lidar_data():
     CANVAS.delete("all")
     # print(f"MOVE_X: {MOVE_X}, MOVE_Y: {MOVE_Y}, ROTATE: {ROTATE}")
 
-    logData = loadScanLog()[1]
+    logData = loadScanLog("/log2")[1]
 
     # 기본 지도 데이터 정의
     mapdata = None
@@ -326,7 +326,7 @@ if __name__ == "__main__":
     infoFrame.pack()
 
     # 로그
-    logName = loadScanLog()[0]
+    logName = loadScanLog("/log2")[0]
     # 로그 데이터 선택 버튼
     for logIndex, log in enumerate(logName):
         intvalue = tk.IntVar(value=0)
