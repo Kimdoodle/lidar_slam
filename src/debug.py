@@ -241,48 +241,6 @@ def printLine(lineData:list, color='black'):
             fill="red", arrow=tk.LAST,
         )
 
-    # if MODE == 'dot':
-    #     # 점의 형태로 지도 생성
-    #
-    # 
-    # elif MODE == 'line':
-    #     # 체크된 데이터 병합
-    #     mapData = Map(Scan(logData[0]))
-    #     for index, value in enumerate(CHECKED[1:]):
-    #         if value.get() == 1:
-    #             mapData.update(Scan(logData[index + 1]))
-    #
-    # 
-    # elif MODE == 'debug':
-    #     # 선의 형태로 지도 생성
-    #     for index, log in enumerate(logData):
-    #         if CHECKED[index].get() == 0: continue
-    #         color = 'red' if index == 0 else COLOR[index]
-    #         mapData = Map(Scan(log))
-    #         for index, lineInfo in enumerate(mapData.lineInfo):
-    #             x1 = CENTER_X + lineInfo.startX / DISTANCE_RATIO + MOVE_X
-    #             y1 = CENTER_Y + lineInfo.startY / DISTANCE_RATIO + MOVE_Y
-    #             x2 = CENTER_X + lineInfo.endX / DISTANCE_RATIO + MOVE_X
-    #             y2 = CENTER_Y + lineInfo.endY / DISTANCE_RATIO + MOVE_Y
-    #             newCord1 = rotate_cord(x1, y1)
-    #             newCord2 = rotate_cord(x2, y2)
-    # 
-    #             CANVAS.create_line(newCord1, newCord2, width=2, fill=color)
-    # 
-    #             # 선마다 번호 표시
-    #             if PRINT.get() == 1:
-    #                 midpoint = midCord(newCord1, newCord2)
-    #                 CANVAS.create_text(midpoint, text=str(index))
-
-
-
-    # dist = 500 / DISTANCE_RATIO
-    # canvas.create_oval(
-    #     CENTER_X - dist, CENTER_Y - dist,
-    #     CENTER_X + dist, CENTER_Y + dist,
-    #     fill=None
-    # )
-
 
 if __name__ == "__main__":
     ROOT.protocol("WM_DELETE_WINDOW", on_closing)
