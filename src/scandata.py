@@ -72,11 +72,11 @@ class Scan:
             self.interInfo.append(sqrt(distX ** 2 + distY ** 2))
             self.funcInfo.append(distY / distX)
 
-        # 이상치 제거 확률분포 계산
-        self.angleMean, self.angleStd = removeOutlier(self.angleInfo)
-        self.distMean, self.distStd = removeOutlier(self.distInfo)
-        self.interMean, self.interStd = removeOutlier(self.interInfo)
-        self.funcMean, self.funcStd = removeOutlier(self.funcInfo)
+        # # 이상치 제거 확률분포 계산
+        # self.angleMean, self.angleStd = removeOutlier(self.angleInfo)
+        # self.distMean, self.distStd = removeOutlier(self.distInfo)
+        # self.interMean, self.interStd = removeOutlier(self.interInfo)
+        # self.funcMean, self.funcStd = removeOutlier(self.funcInfo)
 
         self.distOutlier = checkOutlier(self.distInfo)
         self.interOutlier = checkOutlier(self.interInfo)
@@ -117,7 +117,6 @@ class Scan:
 
         for cluster in self.clusters:
             cluster.visualize(self.cordInfo)
-
 
         # 2. 각 클러스터 별 선 생성
         for cluster in self.clusters:

@@ -18,14 +18,13 @@ ROTATE_RATIO = 5  # 회전
 RADIUS = 5  # 점 하나의 반지름
 
 MODE = [tk.IntVar(value=0), tk.IntVar(value=0)]  # 모드, 상세 단계 번호
-MODE_NAMES = ['기본', '실험1', '실험2']
+MODE_NAMES = ['기본', '실험1']
 MODES = [['점 표시'],
-         ['다운샘플링', 'ICP', '결합'],
          ['클러스터링', '선 생성', '선 조합', '결합']]
 BUTTONS = [[], [], []]
 PRINT = tk.IntVar(value=0)
 
-COLOR = ["black", "blue violet", "brown", "burlywood", "cadet blue",
+COLOR = ["red", "blue", "blue violet", "brown", "burlywood", "cadet blue",
          "chartreuse", "chocolate", "coral", "cornflower blue", "dark goldenrod",
          "dark green", "dark olive green", "dark orange", "dark orchid", "dark salmon", ]  # 점 색상
 
@@ -36,6 +35,7 @@ MOVE_X = 0
 MOVE_Y = 0
 ROTATE = 0
 
+MAPDATA = None
 
 # 종료
 def on_closing():
@@ -146,6 +146,18 @@ def numberChange():
     draw_lidar_data()
 
 
+# 선택된 스캔 데이터를 이용하여 지도 데이터 생성
+def makeMapData():
+    global MAPDATA
+    MAPDATA = None
+    logs = loadScanLog("/log2")[1]
+    for index, checkData in enumerate(CHECKED):
+        if checkData.get() == 1:
+            if MAPDATA is None:
+                MAPDATA = Map(Scan(logs[index]))
+            else:
+                MAPDATA.update(logs[index])
+
 '''
     스캔 데이터를 지도에 표시
     MODE = 기본 --> 선택한 데이터를 각각 점 데이터로 표시함
@@ -156,54 +168,31 @@ def draw_lidar_data():
     CANVAS.delete("all")
     # print(f"MOVE_X: {MOVE_X}, MOVE_Y: {MOVE_Y}, ROTATE: {ROTATE}")
 
-    logData = loadScanLog("/log2")[1]
+    # 지도 데이터
+    makeMapData()
 
-    # 기본 지도 데이터 정의
-    mapdata = None
-    for index, checkData in enumerate(CHECKED):
-        if index == 0: continue
-        if checkData.get() == 1:
-            if mapdata is None:
-                mapdata = Map(Scan(logData[index]))
-            else:
-                mapdata.update(logData[index])
-    if mapdata is None:
-        mapdata = Map(Scan(logData[0]))
-
+    if MAPDATA is None:
+        return
 
     # 기본
     if MODE[0].get() == 0:
-        for i, scanLog in enumerate(mapdata.scanDataLog):
+        for i, scanLog in enumerate(MAPDATA.scanDataLog):
             printDot(scanLog.cordInfo, COLOR[i])
 
-    # Todo: pass
-    elif MODE[0].get() == 1:  # ICP
-        if MODE[1].get() == 0:  # 다운샘플링 - 2개의 (x,y) list
-            printDot(mapdata.icpStep1_DownSample[0])
-            printDot(mapdata.icpStep1_DownSample[1])
-
-        if MODE[1].get() >= 1:
-            print(mapdata.icpStep2_ICPResult)
-
-        if MODE[1].get() == 2:
-            printDot(mapdata.icpStep3_MergedData)
-
     # MY
-    elif MODE[0].get() == 2:
+    elif MODE[0].get() == 1:
         if MODE[1].get() == 0:  # 클러스터링 데이터
-            for clusters in mapdata.myStep0_cluster:
+            for clusters in MAPDATA.myStep0_cluster:
                 for index, cluster in enumerate(clusters):
                     printDot(cluster.cordInfo, COLOR[index])
 
         if MODE[1].get() == 1:  # 선 생성
-            for index, line in enumerate(mapdata.myStep1_makeLine):
+            for index, line in enumerate(MAPDATA.myStep1_makeLine):
                 printLine(line, COLOR[index])
 
-        if MODE[1].get() == 2:  # ???
-            mapdata.my1_lineICP(mapdata.myStep1_makeLine[0], mapdata.myStep1_makeLine[1])
-            for index, lines in enumerate(mapdata.myStep2_ICPResult):
-                for line in lines:
-                    printLine(line, COLOR[index])
+        if MODE[1].get() == 2:  # ICP 적용
+            for index, lines in enumerate(MAPDATA.myStep2_ICPResult):
+                printLine(lines, COLOR[index])
 
         if MODE[1].get() == 3:  # 선 결합
             pass
