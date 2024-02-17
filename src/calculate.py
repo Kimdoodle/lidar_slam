@@ -5,10 +5,10 @@ import numpy as np
 
 
 # 두 좌표의 거리 반환
-def calculate_dist(cord1:tuple, cord2:tuple) -> float:
+def calculate_dist(cord1: tuple, cord2: tuple) -> float:
     return sqrt((cord1[0]-cord2[0])**2 + (cord1[1]-cord2[1])**2)
 
-# 두 직선이 이루는 각을 계산
+# 두 직선이 이루는 예각을 계산
 def calculate_angle(m1, m2):
     angle_rad = atan2((m2 - m1) , (1 + m1 * m2))
     angle_deg = angle_rad * 180 / pi
@@ -25,7 +25,7 @@ def calculate_move(x, y, movex, movey, rotate) -> tuple:
     return (x, y)
 
 # 이상치 데이터 반환
-def checkOutlier(data:list):
+def checkOutlier(data: list):
     mean = np.mean(np.array(data))
     std = np.std(np.array(data))
 
@@ -38,7 +38,7 @@ def checkOutlier(data:list):
     return newData
 
 # 이상치 제거 후 평균, 표준편차 계산
-def removeOutlier(data:list):
+def removeOutlier_integer(data: list):
     mean = np.mean(np.array(data))
     std = np.std(np.array(data))
 
@@ -51,6 +51,15 @@ def removeOutlier(data:list):
     newMean = np.mean(np.array(newData))
     newStd = np.std(np.array(newData))
     return newMean, newStd
+
+# 이상치 제거 후 평균, 표준편차 계산(tuple형 리스트)
+def removeOutlier_tuple(data: list):
+    X = [d[0] for d in data]
+    Y = [d[1] for d in data]
+    meanX, stdX = removeOutlier_integer(X)
+    meanY, stdY = removeOutlier_integer(Y)
+
+    return (meanX, meanY), (stdX, stdY)
 
 # 데이터값의 확률분포 계산
 def check95(mean, std):
@@ -70,7 +79,7 @@ def calculateVariance(data):
 def midCord(c1:tuple, c2:tuple) -> tuple:
     return ((c1[0]+c2[0])/2, (c1[1]+c2[1])/2)
 
-def checkFunc(funcDiff:list):
+def checkFunc(funcDiff: list):
     return 0.9, 1.1
     
 

@@ -60,6 +60,8 @@ class Line:
     
     def calFunc(self):
         try:
+            if self.endX - self.startX  == 0:
+                return 0
             # print(self.startX, self.startY, self.endX, self.endY)
             a = (self.endY - self.startY)/(self.endX - self.startX)
             return a

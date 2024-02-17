@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import scanLog
-from calculate import check95, checkOutlier, removeOutlier, calculate_angle
+from calculate import check95, checkOutlier, removeOutlier_integer, calculate_angle
 from compare import compare, move
 from icp import icp
 from scanCheck import Cluster
@@ -35,8 +35,9 @@ class Scan:
         self.makeLine()
         # self.lineLog = self.makeLog(self.lineInfo)   # 완성된 직선 정보의 로그
 
-    # 기존 데이터에서 업데이트
-    def add(self, data):
+    # 기존 데이터에 새로운 좌표정보 추가
+    # 입력 데이터는 (x,y)로 이루어진 list
+    def addData(self, data):
         cordInfo = [Cord(element) for element in data]
         # temp = self.cordInfo + cordInfo
         # self.cordInfo = temp
@@ -156,10 +157,12 @@ class Scan:
                                           self.cordInfo[line[-1]],
                                           line[0], line[-1]))
 
+    # 좌표 정보 정렬
+    def sortCord(self):
+        pass
+
+
         # 3. 클러스터 내 선 묶음
-
-
-
         # newLine = True
         # sc = None
         # data = []
