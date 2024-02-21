@@ -19,10 +19,19 @@ def calculate_angle(m1, m2):
 def calculate_move(x, y, movex, movey, rotate) -> tuple:
     x += movex
     y += movey
-    theta = radians(rotate)
-    x = cos(theta) * x - sin(theta) * y
-    y = sin(theta) * x + cos(theta) * y
-    return (x, y)
+    angle_rad = np.deg2rad(rotate)
+    # Define rotation matrix
+    rotation_matrix = np.array([[np.cos(angle_rad), -np.sin(angle_rad)],
+                                [np.sin(angle_rad), np.cos(angle_rad)]])
+
+    # Define point as a vector
+    point = np.array([x, y])
+
+    # Rotate point
+    rotated_point = np.dot(rotation_matrix, point)
+    rotated_point = np.round(rotated_point, 4)
+
+    return rotated_point
 
 # 이상치 데이터 반환
 def checkOutlier(data: list):
@@ -116,4 +125,22 @@ def get_perpendicular(cord1, func, funcCord):
 
     return distance
 
-# 점(x,y)에서 직선에 내린 수선의 길이를 계산
+# 좌표(x,y)가 이루는 각도를 계산
+def calculate_degree(x, y):
+    # Calculate angle in radians
+    angle_rad = np.arctan2(y, x)
+
+    # Convert radians to degrees
+    angle_deg = np.degrees(angle_rad)
+
+    # Ensure angle is between 0 and 360 degrees
+    angle_deg = (angle_deg + 360) % 360
+
+    return angle_deg
+
+# 좌표(x,y)가 이루는 각도를 계산하여 리스트를 정렬
+# 정렬한 후 절반으로 다운샘플링
+def sort_cords(cords: list):
+    newCords = sorted(cords, key=lambda cord: calculate_degree(cord.x, cord.y))
+    return newCords[::2]
+

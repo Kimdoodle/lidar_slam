@@ -175,8 +175,8 @@ def draw_lidar_data():
         return
 
     # 기본
-    if MODE[0].get() == 0:
-        for i, scanLog in enumerate(MAPDATA.scanDataLog):
+    elif MODE[0].get() == 0:
+        for i, scanLog in enumerate(MAPDATA.scanLog):
             printDot(scanLog.cordInfo, COLOR[i])
 
     # MY

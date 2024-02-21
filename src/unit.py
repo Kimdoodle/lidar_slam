@@ -19,16 +19,10 @@ class Cord:
             self.x = data[0]
             self.y = data[1]
 
-    def move_angle(self, angle):
-        sin0 = sin(radians(angle))
-        cos0 = cos(radians(angle))
-        self.x = self.x*cos0 - self.y*sin0
-        self.y = self.x*sin0 + self.y*cos0
-
     def toLog(self):
-        return (self.quality, self.angle, self.distance)
+        return self.quality, self.angle, self.distance
     def toString(self):
-        return(f'{self.quality}, {self.angle}, {self.distance}, {self.x}, {self.y}')
+        return f'{self.quality}, {self.angle}, {self.distance}, {self.x}, {self.y}'
     
     # 대소비교
     def __lt__(self, other):

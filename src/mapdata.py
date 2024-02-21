@@ -9,7 +9,8 @@ from scipy.spatial import cKDTree
 import scandata
 import scanLog
 from calculate import (calculate_angle, calculate_dist, check95, checkFunc,
-                       newCord, removeOutlier_integer, removeOutlier_tuple, calculateVariance, calculate_move)
+                       newCord, removeOutlier_integer, removeOutlier_tuple, calculateVariance, calculate_move,
+                       sort_cords)
 from scanCheck import MoveLine, DataCheck
 from scandata import Scan
 from unit import Cord, Line
@@ -88,7 +89,7 @@ class Map:
 
         distRes = removeOutlier_tuple(compDist)[0]
 
-        self.moveLog.append((-distRes[0], -distRes[1], -funcRes))
+        self.moveLog.append((distRes[0], distRes[1], -funcRes))
 
     # 추정한 odometry를 이용해 최종 병합
     def merge(self):
@@ -104,8 +105,9 @@ class Map:
         origLog = scan.cordXY
         newLog = [calculate_move(l[0], l[1], move[0], move[1], angle) for l in origLog]
 
-        # 2. 기존 점 데이터와 합친 후 클러스터링/선 생성
+        # 2. 기존 점 데이터와 합친 후 축소, 클러스터링/선 생성
         scan.cordInfo = self.cordInfo + [Cord[l] for l in newLog]
+        scan.cordInfo = sort_cords(scan.cordInfo)
         scan.calculate()
         scan.makeLine()
         self.cordInfo = scan.cordInfo
