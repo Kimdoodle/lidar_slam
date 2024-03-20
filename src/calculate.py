@@ -5,10 +5,10 @@ import numpy as np
 
 
 # 두 좌표의 거리 반환
-def calculate_dist(cord1:tuple, cord2:tuple) -> tuple:
+def calculate_dist(cord1: tuple, cord2: tuple) -> float:
     return sqrt((cord1[0]-cord2[0])**2 + (cord1[1]-cord2[1])**2)
 
-# 두 직선이 이루는 각을 계산
+# 두 직선이 이루는 예각을 계산
 def calculate_angle(m1, m2):
     angle_rad = atan2((m2 - m1) , (1 + m1 * m2))
     angle_deg = angle_rad * 180 / pi
@@ -19,13 +19,22 @@ def calculate_angle(m1, m2):
 def calculate_move(x, y, movex, movey, rotate) -> tuple:
     x += movex
     y += movey
-    theta = radians(rotate)
-    x = cos(theta) * x - sin(theta) * y
-    y = sin(theta) * x + cos(theta) * y
-    return (x, y)
+    angle_rad = np.deg2rad(rotate)
+    # Define rotation matrix
+    rotation_matrix = np.array([[np.cos(angle_rad), -np.sin(angle_rad)],
+                                [np.sin(angle_rad), np.cos(angle_rad)]])
+
+    # Define point as a vector
+    point = np.array([x, y])
+
+    # Rotate point
+    rotated_point = np.dot(rotation_matrix, point)
+    rotated_point = np.round(rotated_point, 4)
+
+    return rotated_point
 
 # 이상치 데이터 반환
-def checkOutlier(data:list):
+def checkOutlier(data: list):
     mean = np.mean(np.array(data))
     std = np.std(np.array(data))
 
@@ -38,7 +47,7 @@ def checkOutlier(data:list):
     return newData
 
 # 이상치 제거 후 평균, 표준편차 계산
-def removeOutlier(data:list):
+def removeOutlier_integer(data: list):
     mean = np.mean(np.array(data))
     std = np.std(np.array(data))
 
@@ -52,6 +61,15 @@ def removeOutlier(data:list):
     newStd = np.std(np.array(newData))
     return newMean, newStd
 
+# 이상치 제거 후 평균, 표준편차 계산(tuple형 리스트)
+def removeOutlier_tuple(data: list):
+    X = [d[0] for d in data]
+    Y = [d[1] for d in data]
+    meanX, stdX = removeOutlier_integer(X)
+    meanY, stdY = removeOutlier_integer(Y)
+
+    return (meanX, meanY), (stdX, stdY)
+
 # 데이터값의 확률분포 계산
 def check95(mean, std):
     zScore = 1.96
@@ -60,11 +78,17 @@ def check95(mean, std):
 
     return min, max
 
+# 데이터의 분산을 계산
+def calculateVariance(data):
+    length = len(data)
+    mean = sum(data)/n
+    return sum((x-mean)**2 for x in data) / length
+
 # 두 좌표의 중점 반환
 def midCord(c1:tuple, c2:tuple) -> tuple:
     return ((c1[0]+c2[0])/2, (c1[1]+c2[1])/2)
 
-def checkFunc(funcDiff:list):
+def checkFunc(funcDiff: list):
     return 0.9, 1.1
     
 
@@ -100,4 +124,23 @@ def get_perpendicular(cord1, func, funcCord):
     distance = sqrt((x - intersection_x)**2 + (y - intersection_y)**2)
 
     return distance
+
+# 좌표(x,y)가 이루는 각도를 계산
+def calculate_degree(x, y):
+    # Calculate angle in radians
+    angle_rad = np.arctan2(y, x)
+
+    # Convert radians to degrees
+    angle_deg = np.degrees(angle_rad)
+
+    # Ensure angle is between 0 and 360 degrees
+    angle_deg = (angle_deg + 360) % 360
+
+    return angle_deg
+
+# 좌표(x,y)가 이루는 각도를 계산하여 리스트를 정렬
+# 정렬한 후 절반으로 다운샘플링
+def sort_cords(cords: list):
+    newCords = sorted(cords, key=lambda cord: calculate_degree(cord.x, cord.y))
+    return newCords[::2]
 
