@@ -29,6 +29,8 @@ class Map:
         self.lineLog = [scan.lineInfo]   # 선 로그
         self.moveLog = [(0, 0, 0)]  # 중심 이동 로그
 
+        # Todo: 대조군
+
         # My Algorithm
         self.myStep0_cluster = [scan.clusters]  # 클러스터링 데이터
         self.myStep1_makeLine = [scan.lineInfo]  # 선 생성 후 각각의 선 데이터
@@ -107,9 +109,9 @@ class Map:
 
         # 2. 기존 점 데이터와 합친 후 축소, 클러스터링/선 생성
         scan.cordInfo = self.cordInfo + [Cord[l] for l in newLog]
-        scan.cordInfo = sort_cords(scan.cordInfo)
-        scan.calculate()
-        scan.makeLine()
+        scan.cordInfo = sort_cords(scan.cordInfo)  # 축소
+        scan.calculate()  # 클러스터링
+        scan.makeLine()  # 선 생성
         self.cordInfo = scan.cordInfo
         self.myStep3_MergedData = scan.lineInfo
 

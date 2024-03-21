@@ -6,7 +6,6 @@ try:
     from rplidar import RPLidar
 except: pass
 import os
-import sys
 import time
 import tkinter
 
