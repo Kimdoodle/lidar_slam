@@ -13,9 +13,9 @@ WIDTH = 1600
 HEIGHT = 900
 CENTERX = WIDTH / 2
 CENTERY = HEIGHT / 2
-RADIUS = 1
+RADIUS = 2
 RATIO = 0.2
-ROTATE = 0
+ROTATE = 10
 
 INDEX = 0       # 데이터 전체를 선택하는 인덱스
 SUBCORD = []    # 한 데이터의 좌표 데이터
@@ -56,19 +56,17 @@ def onSave(data: list):
 
 # 결정
 def selLine(event):
-    global SUBINDEX, SUBCORD, ROTATE
+    global SUBINDEX, SUBCORD
     # 회전 처리
     if event.keysym == 'q':
-        ROTATE += 10
         for i in range(len(SUBCORD)):
             SUBCORD[i] = cal.rotateCord(SUBCORD[i], ROTATE)
         SUBINDEX = 0
         draw()
         return
     elif event.keysym == 'e':
-        ROTATE -= 10
         for i in range(len(SUBCORD)):
-            SUBCORD[i] = cal.rotateCord(SUBCORD[i], ROTATE)
+            SUBCORD[i] = cal.rotateCord(SUBCORD[i], -ROTATE)
         SUBINDEX = 0
         draw()
         return
@@ -91,7 +89,7 @@ def selLine(event):
         CANVAS.itemconfig(line, fill='red')
 
     line = CANVAS.create_line(x1 * RATIO + CENTERX, y1 * RATIO + CENTERY,
-                              x2 * RATIO + CENTERX, y2 * RATIO + CENTERY, fill='blue', width=5)
+                              x2 * RATIO + CENTERX, y2 * RATIO + CENTERY, fill='blue', width=3)
 
     SUBTRAIN.insert(SUBINDEX, (angleDiff, distanceDiff, distanceFromCenterDiff, res))
     SUBLINE.append(line)
