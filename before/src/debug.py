@@ -273,7 +273,7 @@ if __name__ == "__main__":
     infoFrame.pack()
 
     # 로그
-    logName = loadScanLog("/log2")[0]
+    logName = loadScanLog("../../log2")[0]
     # 로그 데이터 선택 버튼
     for logIndex, log in enumerate(logName):
         intvalue = tk.IntVar(value=0)
