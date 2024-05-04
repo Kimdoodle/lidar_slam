@@ -3,7 +3,7 @@ try:
 
     import serial
 
-    from rplidar import RPLidar
+    from scanLog.rplidar import RPLidar
 except: pass
 import os
 import time
