@@ -78,7 +78,9 @@ def _process_scan(raw):
         raise RPLidarException('New scan flags mismatch')
     check_bit = _b2i(raw[1]) & 0b1
     if check_bit != 1:
-        raise RPLidarException('Check bit not equal to 1')
+        # Todo: my Update
+        return new_scan, quality, 0, 0
+        # raise RPLidarException('Check bit not equal to 1')
     angle = ((_b2i(raw[1]) >> 1) + (_b2i(raw[2]) << 7)) / 64.
     distance = (_b2i(raw[3]) + (_b2i(raw[4]) << 8)) / 4.
     return new_scan, quality, angle, distance

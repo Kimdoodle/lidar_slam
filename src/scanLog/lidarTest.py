@@ -1,3 +1,4 @@
+import traceback
 from rplidar import RPLidar
 import time
 
@@ -14,6 +15,7 @@ process_scan = lambda scan: None
 try :
     for scan in lidar.iter_scans():
         print(scan)
-except:
+except Exception as e:
+    traceback.print_exc()
     lidar.stop()
     lidar.stop_motor()

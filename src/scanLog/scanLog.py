@@ -10,33 +10,47 @@ try:
 
     import serial
 
-    from scanLog.rplidar import RPLidar
+    from rplidar import RPLidar
 except:
     pass
 
 import scandata
 
-
 # 로그 스캔, 1초마다 반복함
 def saveScanLog():
+    current_dir = os.getcwd()
+    curTime = 'log' + datetime.datetime.now().strftime("%Y-%m-%d")
+    
+    os.makedirs(os.path.join(current_dir, curTime), exist_ok=True)
+
     try:
+        # Lidar 실행
         serial_port = '/dev/ttyUSB0'
         lidar = RPLidar(serial_port, 256000)
         time.sleep(6)
+
         # 스캔
+        sameSecTimestamp = 0
+        currentTime = ''
         for i, scan in enumerate(lidar.iter_scans()):
             data = scandata.Scan(scan)
-            current_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-            filename = f'log_{current_time}.txt'
-            filedirectory = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log2', filename)
+            nextTime = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+            if currentTime != nextTime:
+                sameSecTimestamp = 0
+                currentTime = nextTime
+            else:
+                sameSecTimestamp += 1
+            filename = f'log_{nextTime}({sameSecTimestamp}).txt'
+            filedirectory = os.path.join(current_dir, curTime, filename)
 
             # 파일을 현재 디렉토리에 저장
             with open(filedirectory, 'w') as file:
-                for cord in data.cordInfo:
-                    text = '('+', '.join(map(str, cord.toLog())) + ')\n'
+                for info in data.scanInfo:
+                    text = f"({info[0]}, {info[1]}, {info[2]})\n"
                     file.write(text)
 
-            print(f"Scan data log successfully saved to {filename}, data: {len(data.cordInfo)}")
+            print(f"Scan data log successfully saved to {filename}, data: {len(data.scanInfo)}")
+
             # time.sleep(1)
     except Exception as e:
         # print(f"Error saving scan data log: {e}")

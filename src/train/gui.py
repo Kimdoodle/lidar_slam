@@ -5,7 +5,7 @@ import sys
 import numpy as np
 
 sys.path.append('../')
-from src import scanFile
+from gui import scanFile
 import calculate as cal
 
 
