@@ -16,3 +16,8 @@ temp/
 # etc
 .catkin_workspace
 /.run/
+
+# logfile
+log/
+src/train/data/
+src/train/result/
