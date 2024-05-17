@@ -1,3 +1,4 @@
+# Scan Data Class
 import numpy as np
 
 class Scan:

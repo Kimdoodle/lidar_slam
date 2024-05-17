@@ -4,21 +4,21 @@ import os
 import re
 import time
 import traceback
+import pandas as pd
+import scandata
 
 try:
     import fcntl
-
     import serial
 
     from rplidar import RPLidar
 except:
     pass
 
-import scandata
 
 # 로그 스캔, 1초마다 반복함
 def saveScanLog():
-    current_dir = os.getcwd()
+    current_dir = os.path.join(os.getcwd(), 'raw')
     curTime = 'log' + datetime.datetime.now().strftime("%Y-%m-%d")
     
     os.makedirs(os.path.join(current_dir, curTime), exist_ok=True)
@@ -40,14 +40,14 @@ def saveScanLog():
                 currentTime = nextTime
             else:
                 sameSecTimestamp += 1
-            filename = f'log_{nextTime}({sameSecTimestamp}).txt'
+            filename = f'log_{nextTime}({sameSecTimestamp}).csv'
             filedirectory = os.path.join(current_dir, curTime, filename)
 
-            # 파일을 현재 디렉토리에 저장
-            with open(filedirectory, 'w') as file:
-                for info in data.scanInfo:
-                    text = f"({info[0]}, {info[1]}, {info[2]})\n"
-                    file.write(text)
+            # DataFrame으로 변환
+            df = pd.DataFrame(data.scanInfo, columns=['quality', 'angle', 'distance'])
+
+            # CSV파일로 저장
+            df.to_csv(filedirectory, index=False)
 
             print(f"Scan data log successfully saved to {filename}, data: {len(data.scanInfo)}")
 
