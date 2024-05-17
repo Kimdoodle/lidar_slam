@@ -33,7 +33,7 @@ def saveScanLog():
         sameSecTimestamp = 0
         currentTime = ''
         for i, scan in enumerate(lidar.iter_scans()):
-            data = scandata.Scan(scan)
+            data = scandata.Scan(scan, convert=False)
             nextTime = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
             if currentTime != nextTime:
                 sameSecTimestamp = 0
@@ -55,12 +55,51 @@ def saveScanLog():
     except Exception as e:
         # print(f"Error saving scan data log: {e}")
         traceback.print_exc()
-    finally:
+    finally: # 스캔 종료와 동시에 데이터 변환, 저장
         lidar.stop()
         lidar.stop_motor()
         lidar.disconnect()
+        makeTrainData(os.path.join(current_dir, curTime))
 
-# return [logFileNames, logData]
+# 스캔 데이터를 학습 데이터로 저장
+def makeTrainData(path: str):
+    # 저장할 폴더 경로 설정
+    data_folder = os.path.join(os.getcwd(), 'convert')
+    # 폴더가 존재하지 않는 경우 생성
+    os.makedirs(data_folder, exist_ok=True)
+    temp = []
+    count = 0
+    fileList = sorted(os.listdir(path))
+    for file in fileList:
+        df = pd.read_csv(os.path.join(path, file))
+        for _, row in df.iterrows():
+            temp.append((row['quality'], row['angle'], row['distance']))
+
+        scan = scandata.Scan(temp)
+        scan.postProcess()  # 학습 데이터 생성
+
+        # pandas DataFrame으로 데이터 구성
+        df = pd.DataFrame({
+            'x': scan.x,
+            'y': scan.y,
+            'InterInfoLeft': scan.interInfoLeft,
+            'InterInfoRight': scan.interInfoRight,
+            'AngleInfoLeft': scan.angleInfoLeft,
+            'AngleInfoRight': scan.angleInfoRight,
+            'DistInfoLeft': scan.distInfoLeft,
+            'DistInfoRight': scan.distInfoRight
+        })
+        # 출력 파일 경로 설정 (원본 파일 이름 사용, 확장자를 .csv로 변경)
+        base_filename = os.path.splitext(file)[0]
+        output_path = os.path.join(data_folder, f"{base_filename}_train.csv")
+
+        # CSV 파일로 저장
+        df.to_csv(output_path, index=False)
+        count += 1
+
+    print(f"{count} train data saved to {data_folder}")
+
+
 def loadScanLog(path="/log") -> tuple:
     try:
         # 파일 목록을 구성
