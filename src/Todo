@@ -1,5 +1,7 @@
 Todo lists
 
+0. Lidar publisher/subscriber 분리
+
 1. 데이터 스캔
 txt파일에서 csv파일로 저장하도록 변경
 log폴더를 2개로 분리
