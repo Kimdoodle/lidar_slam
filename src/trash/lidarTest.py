@@ -1,5 +1,5 @@
 import traceback
-from rplidar import RPLidar
+from trash.rplidar import RPLidar
 import time
 
 lidar = RPLidar('/dev/ttyUSB0', 256000)

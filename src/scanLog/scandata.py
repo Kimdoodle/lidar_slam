@@ -1,13 +1,14 @@
 # Scan Data Class
 import numpy as np
 
-
 class Scan:
     def __init__(self, data, convert=True):
         if convert:
             self.scanInfo = np.array([(ele[0], np.radians(ele[1]), ele[2]) for ele in data])
         else:
             self.scanInfo = np.array([(ele[0], ele[1], ele[2]) for ele in data])
+        # inf 값을 가지는 데이터 필터링
+        self.scanInfo = self.scanInfo[np.isfinite(self.scanInfo[:, 2])]
         self.length = len(self.scanInfo)
         self.cordInfo = None
         self.x = np.zeros(self.length)  # X 좌표
@@ -22,8 +23,7 @@ class Scan:
 
     def polar_to_cartesian(self):
         # 극좌표를 카테시안 좌표로 변환
-        self.x, self.y = self.scanInfo[:, 2] * np.cos(self.scanInfo[:, 1]), self.scanInfo[:, 2] * np.sin(
-            self.scanInfo[:, 1])
+        self.x, self.y = self.scanInfo[:, 2] * np.cos(self.scanInfo[:, 1]), self.scanInfo[:, 2] * np.sin(self.scanInfo[:, 1])
 
     def postProcess(self):
         # 좌표 정보 계산

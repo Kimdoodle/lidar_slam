@@ -1,122 +1,86 @@
 # FOR DEBUG - Logfile save/load
 import datetime
 import os
-import time
-import traceback
 import pandas as pd
 import scandata
 import signal
 import sys
-import shutil
+import threading
+import traceback
+import rospy
 
-try:
-    import fcntl
-    import serial
+# 경로 추가
+current_path = os.path.dirname(__file__)
+sys.path.append(os.path.abspath(os.path.join(current_path, '..', 'lidar')))
 
-    from rplidar import RPLidar
-except:
-    pass
+from subscriber import LidarSubscriber
 
 # 폴더 생성
-def makeFolders() -> tuple:
-    folderCount = 0
+def make_folders() -> tuple:
+    folder_count = 0
     current_path = os.path.dirname(__file__)
     project_path = os.path.abspath(os.path.join(current_path, '..', '..'))
-    curTime = datetime.datetime.now().strftime("%Y-%m-%d") + f"({folderCount})"
-    logDir = os.path.join(project_path, 'log', curTime)
-    while os.path.exists(logDir):
-        folderCount += 1
-        curTime = datetime.datetime.now().strftime("%Y-%m-%d") + f"({folderCount})"
-        logDir = os.path.join(project_path, 'log', curTime)
+    cur_time = datetime.datetime.now().strftime("%Y-%m-%d") + f"({folder_count})"
+    log_dir = os.path.join(project_path, 'log', cur_time)
+    while os.path.exists(log_dir):
+        folder_count += 1
+        cur_time = datetime.datetime.now().strftime("%Y-%m-%d") + f"({folder_count})"
+        log_dir = os.path.join(project_path, 'log', cur_time)
 
-    rawPath = os.path.join(logDir, 'raw')
-    convPath = os.path.join(logDir, 'convert')
-    os.makedirs(rawPath)
-    os.makedirs(convPath)
+    raw_path = os.path.join(log_dir, 'raw')
+    conv_path = os.path.join(log_dir, 'convert')
+    os.makedirs(raw_path)
+    os.makedirs(conv_path)
 
-    return rawPath, convPath
+    return raw_path, conv_path
 
-# 로그 스캔, 1초마다 반복함
-def saveScanLog():
-    rawPath, convPath = makeFolders()
-    lidar = None
+# 로그 스캔
+def save_scan_log(lidar_subscriber, shutdown_flag):
+    raw_path, conv_path = make_folders()
     count = 0
-    def signal_handler(sig, frame):
-        if lidar:
-            lidar.stop()
-            lidar.stop_motor()
-            lidar.disconnect()
-        print("학습 데이터 생성 시작.")
-        makeTrainData(rawPath, convPath)
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        # Lidar 실행
-        serial_port = '/dev/ttyUSB0'
-        lidar = RPLidar(serial_port, 256000)
-        time.sleep(6)
-        # # 작동 확인
-        # for i, scan in enumerate(lidar.iter_scans()):
-        #     try:
-        #         data = scandata.Scan(scan, convert=False)
-        #     except:
-        #         time.sleep(1)
-                
-        # 스캔
-        sameSecTimestamp = 0
-        currentTime = ''
-        for i, scan in enumerate(lidar.iter_scans()):
-            data = scandata.Scan(scan, convert=False)
-            nextTime = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-            if currentTime != nextTime:
-                sameSecTimestamp = 0
-                currentTime = nextTime
+        same_sec_timestamp = 0
+        current_time = ''
+        while not rospy.is_shutdown() and not shutdown_flag.is_set():
+            lidar_subscriber.wait_for_data()
+            scan_data = lidar_subscriber.get_scan_data()
+            next_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+            if current_time != next_time:
+                same_sec_timestamp = 0
+                current_time = next_time
             else:
-                sameSecTimestamp += 1
-            filename = f'log_{nextTime}({sameSecTimestamp}).csv'
-            filedirectory = os.path.join(rawPath, filename)
+                same_sec_timestamp += 1
+            filename = f'log_{next_time}({same_sec_timestamp}).csv'
+            file_directory = os.path.join(raw_path, filename)
 
             # DataFrame으로 변환
-            df = pd.DataFrame(data.scanInfo, columns=['quality', 'angle', 'distance'])
+            df = pd.DataFrame(scan_data, columns=['angle', 'distance'])
 
             # CSV파일로 저장
-            df.to_csv(filedirectory, index=False)
+            df.to_csv(file_directory, index=False)
 
-            print(f"Scan data log successfully saved to {filename}, data: {len(data.scanInfo)}")
+            print(f"Scan data log successfully saved to {filename}, data: {len(scan_data)}")
             count += 1
 
-            # time.sleep(1)
     except Exception as e:
-        # print(f"Error saving scan data log: {e}")
         traceback.print_exc()
         print("데이터 수: ", count)
-    except KeyboardInterrupt as e:
-        print("키보드 종료 입력감지, 학습 데이터 생성 시작.")
-        makeTrainData(rawPath, convPath)
-        lidar.stop()
-        lidar.stop_motor()
-        lidar.disconnect()
-    finally: # 스캔 종료와 동시에 데이터 변환, 저장
+    finally:
         print("학습 데이터 생성 시작.")
-        makeTrainData(rawPath, convPath)
-        lidar.stop()
-        lidar.stop_motor()
-        lidar.disconnect()
+        make_train_data(raw_path, conv_path)
 
 # 스캔 데이터를 학습 데이터로 저장
-def makeTrainData(rawPath: str, convPath: str):
-    temp = []
+def make_train_data(raw_path: str, conv_path: str):
     count = 0
-    fileList = sorted(os.listdir(rawPath))
-    for file in fileList:
-        df = pd.read_csv(os.path.join(rawPath, file))
+    file_list = sorted(os.listdir(raw_path))
+    for file in file_list:
+        temp = []  # 각 파일을 처리할 때마다 temp를 초기화합니다.
+        df = pd.read_csv(os.path.join(raw_path, file))
         for _, row in df.iterrows():
-            temp.append((row['quality'], row['angle'], row['distance']))
+            temp.append((0, row['angle'], row['distance']))  # quality 값을 0으로 설정
 
-        scan = scandata.Scan(temp)
+        scan = scandata.Scan(temp, convert=False)
         scan.postProcess()  # 학습 데이터 생성
 
         # pandas DataFrame으로 데이터 구성
@@ -133,38 +97,48 @@ def makeTrainData(rawPath: str, convPath: str):
         })
         # 출력 파일 경로 설정 (원본 파일 이름 사용, 확장자를 .csv로 변경)
         base_filename = os.path.splitext(file)[0]
-        output_path = os.path.join(convPath, f"{base_filename}_train.csv")
+        output_path = os.path.join(conv_path, f"{base_filename}_train.csv")
 
         # CSV 파일로 저장
         df.to_csv(output_path, index=False)
+        print(f"Train data saved to {output_path}, data: {len(df)}")  # 로그 추가
         count += 1
 
     print(f"{count} train data saved.")
 
 
-def loadScanLog(path="/log") -> tuple:
+def load_scan_log(path="/log") -> tuple:
     try:
         # 파일 목록을 구성
         base = os.path.dirname(os.path.abspath(__file__))
         path = base + path
-        fileList = sorted(os.listdir(path))
+        file_list = sorted(os.listdir(path))
         
         # 파일 데이터 반환
-        fileData = []
-        for file in fileList:
+        file_data = []
+        for file in file_list:
             df = pd.read_csv(os.path.join(path, file))
 
             # tuple List 형태로 저장
             data_list = []
             for _, row in df.iterrows():
-                ele = (row['quality'], row['angle'], row['distance'])
+                ele = (0, row['angle'], row['distance'])  # 임시로 quality를 0으로 설정
                 data_list.append(ele)
-            fileData.append(data_list)
+            file_data.append(data_list)
 
-        return fileList, fileData
+        return file_list, file_data
     except Exception as e:
         print(e)
 
-
 if __name__ == '__main__':
-    saveScanLog()
+    lidar_subscriber = LidarSubscriber()
+    shutdown_flag = threading.Event()
+
+    scan_thread = threading.Thread(target=save_scan_log, args=(lidar_subscriber, shutdown_flag))
+    scan_thread.start()
+
+    input("Press Enter to stop...\n")
+    shutdown_flag.set()
+
+    scan_thread.join()
+    print("Scan log has been saved and training data created.")
