@@ -22,7 +22,7 @@ class LidarSubscriber:
 
                 # distance가 inf가 아닌 경우만 데이터에 추가
                 if not distance == float('inf'):
-                    self.scan_data.append((angle_degrees, distance))
+                    self.scan_data.append((angle, distance))
 
                 # 각도 범위가 360도를 넘어가면 데이터 처리
                 if self.previous_angle is not None and self.previous_angle > angle_degrees:

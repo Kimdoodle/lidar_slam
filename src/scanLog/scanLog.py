@@ -80,7 +80,7 @@ def make_train_data(raw_path: str, conv_path: str):
         for _, row in df.iterrows():
             temp.append((0, row['angle'], row['distance']))  # quality 값을 0으로 설정
 
-        scan = scandata.Scan(temp, convert=False)
+        scan = scandata.Scan(temp)
         scan.postProcess()  # 학습 데이터 생성
 
         # pandas DataFrame으로 데이터 구성
@@ -106,29 +106,6 @@ def make_train_data(raw_path: str, conv_path: str):
 
     print(f"{count} train data saved.")
 
-
-def load_scan_log(path="/log") -> tuple:
-    try:
-        # 파일 목록을 구성
-        base = os.path.dirname(os.path.abspath(__file__))
-        path = base + path
-        file_list = sorted(os.listdir(path))
-        
-        # 파일 데이터 반환
-        file_data = []
-        for file in file_list:
-            df = pd.read_csv(os.path.join(path, file))
-
-            # tuple List 형태로 저장
-            data_list = []
-            for _, row in df.iterrows():
-                ele = (0, row['angle'], row['distance'])  # 임시로 quality를 0으로 설정
-                data_list.append(ele)
-            file_data.append(data_list)
-
-        return file_list, file_data
-    except Exception as e:
-        print(e)
 
 if __name__ == '__main__':
     lidar_subscriber = LidarSubscriber()

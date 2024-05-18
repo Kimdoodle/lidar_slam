@@ -8,6 +8,7 @@
 venv/
 
 # __pycache__
+pycache/
 __pycache__/
 *.py[cod]
 
