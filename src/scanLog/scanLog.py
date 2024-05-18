@@ -1,11 +1,13 @@
 # FOR DEBUG - Logfile save/load
 import datetime
 import os
-import re
 import time
 import traceback
 import pandas as pd
 import scandata
+import signal
+import sys
+import shutil
 
 try:
     import fcntl
@@ -15,20 +17,54 @@ try:
 except:
     pass
 
+# 폴더 생성
+def makeFolders() -> tuple:
+    folderCount = 0
+    current_path = os.path.dirname(__file__)
+    project_path = os.path.abspath(os.path.join(current_path, '..', '..'))
+    curTime = datetime.datetime.now().strftime("%Y-%m-%d") + f"({folderCount})"
+    logDir = os.path.join(project_path, 'log', curTime)
+    while os.path.exists(logDir):
+        folderCount += 1
+        curTime = datetime.datetime.now().strftime("%Y-%m-%d") + f"({folderCount})"
+        logDir = os.path.join(project_path, 'log', curTime)
+
+    rawPath = os.path.join(logDir, 'raw')
+    convPath = os.path.join(logDir, 'convert')
+    os.makedirs(rawPath)
+    os.makedirs(convPath)
+
+    return rawPath, convPath
 
 # 로그 스캔, 1초마다 반복함
 def saveScanLog():
-    current_dir = os.path.join(os.getcwd(), 'raw')
-    curTime = 'log' + datetime.datetime.now().strftime("%Y-%m-%d")
-    
-    os.makedirs(os.path.join(current_dir, curTime), exist_ok=True)
+    rawPath, convPath = makeFolders()
+    lidar = None
+    count = 0
+    def signal_handler(sig, frame):
+        if lidar:
+            lidar.stop()
+            lidar.stop_motor()
+            lidar.disconnect()
+        print("학습 데이터 생성 시작.")
+        makeTrainData(rawPath, convPath)
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
     try:
         # Lidar 실행
         serial_port = '/dev/ttyUSB0'
         lidar = RPLidar(serial_port, 256000)
         time.sleep(6)
-
+        # # 작동 확인
+        # for i, scan in enumerate(lidar.iter_scans()):
+        #     try:
+        #         data = scandata.Scan(scan, convert=False)
+        #     except:
+        #         time.sleep(1)
+                
         # 스캔
         sameSecTimestamp = 0
         currentTime = ''
@@ -41,7 +77,7 @@ def saveScanLog():
             else:
                 sameSecTimestamp += 1
             filename = f'log_{nextTime}({sameSecTimestamp}).csv'
-            filedirectory = os.path.join(current_dir, curTime, filename)
+            filedirectory = os.path.join(rawPath, filename)
 
             # DataFrame으로 변환
             df = pd.DataFrame(data.scanInfo, columns=['quality', 'angle', 'distance'])
@@ -50,28 +86,33 @@ def saveScanLog():
             df.to_csv(filedirectory, index=False)
 
             print(f"Scan data log successfully saved to {filename}, data: {len(data.scanInfo)}")
+            count += 1
 
             # time.sleep(1)
     except Exception as e:
         # print(f"Error saving scan data log: {e}")
         traceback.print_exc()
-    finally: # 스캔 종료와 동시에 데이터 변환, 저장
+        print("데이터 수: ", count)
+    except KeyboardInterrupt as e:
+        print("키보드 종료 입력감지, 학습 데이터 생성 시작.")
+        makeTrainData(rawPath, convPath)
         lidar.stop()
         lidar.stop_motor()
         lidar.disconnect()
-        makeTrainData(os.path.join(current_dir, curTime))
+    finally: # 스캔 종료와 동시에 데이터 변환, 저장
+        print("학습 데이터 생성 시작.")
+        makeTrainData(rawPath, convPath)
+        lidar.stop()
+        lidar.stop_motor()
+        lidar.disconnect()
 
 # 스캔 데이터를 학습 데이터로 저장
-def makeTrainData(path: str):
-    # 저장할 폴더 경로 설정
-    data_folder = os.path.join(os.getcwd(), 'convert')
-    # 폴더가 존재하지 않는 경우 생성
-    os.makedirs(data_folder, exist_ok=True)
+def makeTrainData(rawPath: str, convPath: str):
     temp = []
     count = 0
-    fileList = sorted(os.listdir(path))
+    fileList = sorted(os.listdir(rawPath))
     for file in fileList:
-        df = pd.read_csv(os.path.join(path, file))
+        df = pd.read_csv(os.path.join(rawPath, file))
         for _, row in df.iterrows():
             temp.append((row['quality'], row['angle'], row['distance']))
 
@@ -87,17 +128,18 @@ def makeTrainData(path: str):
             'AngleInfoLeft': scan.angleInfoLeft,
             'AngleInfoRight': scan.angleInfoRight,
             'DistInfoLeft': scan.distInfoLeft,
-            'DistInfoRight': scan.distInfoRight
+            'DistInfoRight': scan.distInfoRight,
+            'class': 0
         })
         # 출력 파일 경로 설정 (원본 파일 이름 사용, 확장자를 .csv로 변경)
         base_filename = os.path.splitext(file)[0]
-        output_path = os.path.join(data_folder, f"{base_filename}_train.csv")
+        output_path = os.path.join(convPath, f"{base_filename}_train.csv")
 
         # CSV 파일로 저장
         df.to_csv(output_path, index=False)
         count += 1
 
-    print(f"{count} train data saved to {data_folder}")
+    print(f"{count} train data saved.")
 
 
 def loadScanLog(path="/log") -> tuple:
@@ -122,40 +164,6 @@ def loadScanLog(path="/log") -> tuple:
         return fileList, fileData
     except Exception as e:
         print(e)
-
-# def saveCalLog(scan):
-#     try:
-#         filename = f'calLog.txt'
-#         filedirectory = os.path.join(os.path.dirname(os.path.realpath(__file__)), filename)
-#
-#         # 파일을 현재 디렉토리에 저장
-#         with open(filedirectory, 'w') as file:
-#             file.write('cordInfo(quality, angle, distance, x, y)\n')
-#             for index, cord in enumerate(scan.cordInfo):
-#                 file.write(str(index) + '\t' + cord.toString() + '\n')
-#             file.write('angleInfo(diff between i, i+1)\n')
-#             file.write(f'평균: {scan.angleMean}, 표준편차: {scan.angleStd}\n')
-#             for index, angle in enumerate(scan.angleInfo):
-#                 file.write(str(index) + '\t' + str(angle) + '\n')
-#             file.write('distInfo(diff between i, i+1)\n')
-#             file.write(f'평균: {scan.distMean}, 표준편차: {scan.distStd}\n')
-#             for index, dist in enumerate(scan.distInfo):
-#                 file.write(str(index) + '\t' + str(dist) + '\n')
-#             file.write('interInfo(diff between to dots)\n')
-#             file.write(f'평균: {scan.interMean}, 표준편차: {scan.interStd}\n')
-#             for index, inter in enumerate(scan.interInfo):
-#                 file.write(str(index) + '\t' + str(inter) + '\n')
-#             file.write('funcInfo(function)\n')
-#             file.write(f'평균: {scan.funcMean}, 표준편차: {scan.funcStd}\n')
-#             for index, func in enumerate(scan.funcInfo):
-#                 file.write(str(index) + '\t' + str(func) + '\n')
-#             file.write('lineInfo(start, end)\n')
-#             for index, line in enumerate(scan.lineInfo):
-#                 file.write(str(index) + '\t' + line.toString() + '\n')
-#
-#         print(f"Scan data log successfully saved to {filename}")
-#     except Exception as e:
-#         print(f"Error saving scan data log: {e}")
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ Todo lists
 txt파일에서 csv파일로 저장하도록 변경
 log폴더를 2개로 분리
     - 스캔 raw data(csv) -> 스캔 저장 시 처리
-    - 학습 데이터로 변환된 csv -> 스캔 변환시 처리
+    - 학습 데이터로 변환된 csv -> 스캔 종료시 처리
 
 2. GUI
 DBSCAN 정확도 검증을 위한 결과 csv생성
