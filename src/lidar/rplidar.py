@@ -22,12 +22,13 @@ KeyboardInterrupt
 
 For additional information please refer to the RPLidar class documentation.
 '''
+import codecs
 import logging
+import struct
 import sys
 import time
-import codecs
+
 import serial
-import struct
 
 SYNC_BYTE = b'\xA5'
 SYNC_BYTE2 = b'\x5A'
@@ -77,10 +78,12 @@ def _process_scan(raw):
     if new_scan == inversed_new_scan:
         raise RPLidarException('New scan flags mismatch')
     check_bit = _b2i(raw[1]) & 0b1
+
     if check_bit != 1:
-        # Todo: my Update
-        return new_scan, quality, 0, 0
-        # raise RPLidarException('Check bit not equal to 1')
+        print(f"Raw data: {raw}")
+        print(f"Check bit: {check_bit}")
+        print(f"{quality}, {((_b2i(raw[1]) >> 1) + (_b2i(raw[2]) << 7)) / 64.}, {(_b2i(raw[3]) + (_b2i(raw[4]) << 8)) / 4.}")
+        raise RPLidarException('Check bit not equal to 1')
     angle = ((_b2i(raw[1]) >> 1) + (_b2i(raw[2]) << 7)) / 64.
     distance = (_b2i(raw[3]) + (_b2i(raw[4]) << 8)) / 4.
     return new_scan, quality, angle, distance
@@ -93,9 +96,9 @@ class RPLidar(object):
     port = ''  #: Serial port name, e.g. /dev/ttyUSB0
     timeout = 1  #: Serial port timeout
     motor = False  #: Is motor running?
-    baudrate = 115200  #: Baudrate for serial port
+    baudrate = 256000  #: Baudrate for serial port
 
-    def __init__(self, port, baudrate=115200, timeout=1, logger=None):
+    def __init__(self, port, baudrate=256000, timeout=1, logger=None):
         '''Initilize RPLidar object for communicating with the sensor.
 
         Parameters

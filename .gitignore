@@ -8,6 +8,7 @@
 venv/
 
 # __pycache__
+pycache/
 __pycache__/
 *.py[cod]
 
@@ -16,3 +17,10 @@ temp/
 # etc
 .catkin_workspace
 /.run/
+
+# logfile
+log/
+src/train/data/
+src/train/csvResult/
+src/train/pngResult/
+src/train/finalCSV/
