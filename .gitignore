@@ -21,4 +21,6 @@ temp/
 # logfile
 log/
 src/train/data/
-src/train/result/
+src/train/csvResult/
+src/train/pngResult/
+src/train/finalCSV/

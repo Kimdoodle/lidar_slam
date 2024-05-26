@@ -51,7 +51,7 @@ def save_scan_log(scan: list, raw_path: str):
     df.to_csv(file_directory, index=False)
 
     print(f"Scan data log successfully saved to {filename}, data: {len(scan_data)}")
-        
+
 
 # Convert scan data to training data
 def make_train_data(raw_path: str, conv_path: str):
@@ -61,13 +61,14 @@ def make_train_data(raw_path: str, conv_path: str):
         temp = []
         df = pd.read_csv(os.path.join(raw_path, file))
         for _, row in df.iterrows():
-            temp.append((0, row['angle'], row['distance']))  # quality value set to 0
+            temp.append((row['angle'], row['distance']))
 
         scan = scandata.Scan(temp)
-        scan.postProcess()  # Create training data
+        scan.postProcess()
 
-        # Create DataFrame
         df = pd.DataFrame({
+            'angle': scan.scanInfo[:, 1],
+            'distance': scan.scanInfo[:, 2],
             'x': scan.x,
             'y': scan.y,
             'InterInfoLeft': scan.interInfoLeft,
@@ -91,19 +92,6 @@ def make_train_data(raw_path: str, conv_path: str):
     print(f"{count} train data files saved.")
 
 if __name__ == '__main__':
-    scanner = LidarScanner()
-
-    print(scanner.get_info())
-    print(scanner.get_health())
-
-    scan_thread = threading.Thread(target=save_scan_log, args=(scanner,))
-    scan_thread.start()
-
-    try:
-        scanner.start_scanning()
-    except KeyboardInterrupt:
-        print("Stopping the LIDAR scan...")
-    finally:
-        shutdown_flag.set()
-        scanner.stop()
-        scan_thread.join()
+    raw_data_path = os.path.join(os.getcwd(), 'log', '2024-05-26(0)', 'raw')
+    conv_data_path = os.path.join(os.getcwd(), 'log', '2024-05-26(0)', 'convert')
+    make_train_data(raw_data_path, conv_data_path)
