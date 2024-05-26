@@ -22,12 +22,13 @@ KeyboardInterrupt
 
 For additional information please refer to the RPLidar class documentation.
 '''
+import codecs
 import logging
+import struct
 import sys
 import time
-import codecs
+
 import serial
-import struct
 
 SYNC_BYTE = b'\xA5'
 SYNC_BYTE2 = b'\x5A'
@@ -95,9 +96,9 @@ class RPLidar(object):
     port = ''  #: Serial port name, e.g. /dev/ttyUSB0
     timeout = 1  #: Serial port timeout
     motor = False  #: Is motor running?
-    baudrate = 115200  #: Baudrate for serial port
+    baudrate = 256000  #: Baudrate for serial port
 
-    def __init__(self, port, baudrate=115200, timeout=1, logger=None):
+    def __init__(self, port, baudrate=256000, timeout=1, logger=None):
         '''Initilize RPLidar object for communicating with the sensor.
 
         Parameters
