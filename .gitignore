@@ -24,3 +24,6 @@ src/train/data/
 src/train/csvResult/
 src/train/pngResult/
 src/train/finalCSV/
+
+# ros package
+build/

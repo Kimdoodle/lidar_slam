@@ -6,6 +6,10 @@ import rosbag2_py
 from rclpy.serialization import deserialize_message
 from sensor_msgs.msg import LaserScan
 
+file_path = os.path.abspath(__file__)
+src_path = os.path.abspath(os.path.join(file_path, '..', '..'))
+project_path = os.path.abspath(os.path.join(src_path, '..'))
+log_path = os.path.join(project_path, 'log')
 
 def bag_to_csv(bag_file_path, output_folder):
     # Initialize ROS2
@@ -58,6 +62,6 @@ def bag_to_csv(bag_file_path, output_folder):
     rclpy.shutdown()
 
 # Usage
-bag_file_path = os.path.join(os.getcwd(), 'log', 'bagfile', 'rosbag2_2024_06_11-23_32_50_0.db3')
-output_folder = os.path.join(os.getcwd(), 'log', 'csvfile')
+bag_file_path = os.path.join(log_path, 'bagfile', 'rosbag2_2024_06_11-23_32_50_0.db3')
+output_folder = os.path.join(log_path 'csvfile')
 bag_to_csv(bag_file_path, output_folder)
