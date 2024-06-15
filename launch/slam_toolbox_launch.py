@@ -1,12 +1,12 @@
 from launch_ros.actions import Node
-    
+
 from launch import LaunchDescription
 
 
 def generate_launch_description():
     return LaunchDescription([
         Node(
-            package='csv_recorder',
+            package='lidar_slam',
             executable='restore_from_csv',
             name='csv_restorer'
         ),

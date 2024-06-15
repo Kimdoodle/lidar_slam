@@ -10,13 +10,13 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
     rviz_config_dir = os.path.join(
-            get_package_share_directory('csv_recorder'),
+            get_package_share_directory('lidar_slam'),
             'rviz',
             'sllidar_ros2.rviz')
 
     return LaunchDescription([
         Node(
-            package='csv_recorder',
+            package='lidar_slam',
             executable='rplidarNode',
             name='rplidar_node',
             output='screen',

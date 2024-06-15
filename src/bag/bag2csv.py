@@ -27,7 +27,6 @@ def bag_to_csv(bag_file_path, output_folder):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    # Dictionary to hold dataframes for each topic
     data = {}
 
     while reader.has_next():

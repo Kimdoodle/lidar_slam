@@ -45,9 +45,9 @@ def create_bag_from_csv(folder_path, output_bag_path):
                 scan.scan_time = row['Scan_Time']
                 scan.range_min = row['Range_Min']
                 scan.range_max = row['Range_Max']
-                scan.ranges = [float(row['Distance'])]  # assuming 'Distance' is the range
-                scan.intensities = [float(row['Intensity'])]  # assuming 'Intensity' is the intensity
-
+                scan.ranges = [float(row['Distance'])]
+                scan.intensities = [float(row['Intensity'])]
+                
                 # Serialize and write message
                 timestamp_ns = int(row['Timestamp'] * 1e9)
                 writer.write('/scan', serialize_message(scan), timestamp_ns)
