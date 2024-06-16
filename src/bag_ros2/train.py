@@ -86,6 +86,7 @@ def make_train_data(angle, distance, intensity):
     return df
 
 if __name__ == '__main__':
+    print("hello")
     df = pd.read_csv(csvfile)
 
     for index, row in df.iterrows():

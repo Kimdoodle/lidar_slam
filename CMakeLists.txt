@@ -1,25 +1,32 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.0.2)
 project(lidar_slam)
 
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 14)
 endif()
 
-find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(tf2_ros REQUIRED)
-
-add_executable(restore_from_csv src/restore_from_csv.cpp)
-ament_target_dependencies(restore_from_csv rclcpp sensor_msgs std_msgs tf2_ros)
-
-install(TARGETS
-  restore_from_csv
-  DESTINATION lib/${PROJECT_NAME})
-
-install(DIRECTORY launch rviz
-  DESTINATION share/${PROJECT_NAME}/
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  sensor_msgs
+  std_msgs
+  tf2_ros
 )
 
-ament_package()
+catkin_package(
+  CATKIN_DEPENDS roscpp sensor_msgs std_msgs tf2_ros
+)
+
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+)
+
+# add_executable(restore_from_csv src/restore_from_csv.cpp)
+# target_link_libraries(restore_from_csv ${catkin_LIBRARIES})
+
+# install(TARGETS restore_from_csv
+#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
+
+install(DIRECTORY launch rviz
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
