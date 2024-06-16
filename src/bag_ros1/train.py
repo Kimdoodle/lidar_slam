@@ -105,7 +105,7 @@ def save_images(angles, distances, frame_ids, times, clusters, image_counter):
     plt.close()
 
 
-def compute_DBSCAN(msg, eps_ratio, stride):
+def compute_DBSCAN(msg, eps_ratio, stride, make_output):
     start_time = time.time()
 
     angle_min = msg.angle_min
@@ -123,20 +123,29 @@ def compute_DBSCAN(msg, eps_ratio, stride):
     # 클러스터 -1 제거
     noise_indices = np.where(labels == -1)[0]
 
-    # ranges 배열에서 노이즈 데이터 인덱스를 float('inf')로 변환
-    valid_mask = np.isfinite(ranges) & (ranges > 0)
-    original_indices = np.where(valid_mask)[0]
-    noise_original_indices = original_indices[noise_indices]
-    ranges[noise_original_indices] = float('inf')
+    if make_output:
+        # ranges 배열에서 노이즈 데이터 인덱스를 float('inf')로 변환
+        valid_mask = np.isfinite(ranges) & (ranges > 0)
+        original_indices = np.where(valid_mask)[0]
+        noise_original_indices = original_indices[noise_indices]
+        ranges[noise_original_indices] = float('inf')
 
-    # 변경된 ranges를 원본 msg에 반영(+stride)
-    range2 = ranges.tolist()
-    indices = [i for i in range(0, len(range2), stride)]
-    msg.ranges = [range2[i] for i in indices]
+        # 변경된 ranges를 원본 msg에 반영(+stride)
+        range2 = ranges.tolist()
+        final_range = []
+        for i in range(len(range2)):
+            if i%stride == 0:
+                final_range.append(range2[i])
+            else:
+                final_range.append(float('inf'))
+        msg.ranges = final_range
 
     end_time = time.time() - start_time
 
     # 제거된 인덱스 수 반환
     num_removed_indices = len(noise_indices)
 
-    return msg, end_time, num_removed_indices
+    if make_output:
+        return msg, end_time, num_removed_indices
+    else:
+        return [], end_time, num_removed_indices
