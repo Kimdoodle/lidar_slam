@@ -15,7 +15,7 @@ bagname = 'Team_Hector_MappingBox_RoboCup_2011_Rescue_Arena.bag'
 bag_path = os.path.join(log_path, 'bag', bagname)
 
 
-def calculate(eps_ratios, strides, make_output, make_static):
+def calculate(eps_ratios, strides, make_output, make_static, make_image):
     # Results list
     results = []
 
@@ -33,12 +33,14 @@ def calculate(eps_ratios, strides, make_output, make_static):
             with rosbag.Bag(bag_path2, 'w') as outbag:
                 for topic, msg, t in rosbag.Bag(bag_path).read_messages():
                     if topic == '/scan':
-                        msg, time2, remove = compute_DBSCAN(msg, eps_ratio=EPS_RATIO, stride=STRIDE, make_output=make_output)
-                        calTime += time2
-                        removed += remove
                         count += 1
                         if count % 2000 == 1:
-                            print(f"{count-1} data completed.")
+                            print(f"Index {count-1} data completed.")
+                            msg, time2, remove = compute_DBSCAN(msg, eps_ratio=EPS_RATIO, stride=STRIDE, make_image=make_image)
+                        else:
+                            msg, time2, remove = compute_DBSCAN(msg, eps_ratio=EPS_RATIO, stride=STRIDE, make_image=False)
+                        calTime += time2
+                        removed += remove
                     if make_output:
                         outbag.write(topic, msg, t)
             
@@ -50,7 +52,9 @@ def calculate(eps_ratios, strides, make_output, make_static):
                 'EPS_RATIO': EPS_RATIO,
                 'STRIDE': STRIDE,
                 'total_scan_msg': count,
+                'total_removed': removed,
                 'average_removed_data': avg_removed,
+                'total_time': calTime,
                 'time_used_for_DBSCAN': avg_calTime
             })
 
@@ -65,6 +69,6 @@ def calculate(eps_ratios, strides, make_output, make_static):
 
 
 if __name__ == '__main__':
-    eps_ratios = [70, 80, 90, 95]
-    strides = list(range(1, 6, 2))
-    calculate(eps_ratios, strides, make_output=False, make_static=True)
+    eps_ratios = [10, 30, 50, 70, 90]
+    strides = [2, 4, 6, 8, 10]
+    calculate(eps_ratios, strides, make_output=True, make_static=True, make_image=True)
