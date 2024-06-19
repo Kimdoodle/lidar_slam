@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import DBSCAN
 
-# Define paths
 file_path = os.path.abspath(__file__)
 src_path = os.path.abspath(os.path.join(file_path, '..', '..'))
 project_path = os.path.abspath(os.path.join(src_path, '..'))
@@ -14,6 +13,7 @@ log_path = os.path.join(project_path, 'log')
 
 # 데이터 전처리
 def preprocess(angle_min, angle_increment, ranges, stride):
+    ranges = np.nan_to_num(ranges, nan=float('inf'))
     angles = []
 
     current_angle = angle_min - angle_increment
@@ -86,7 +86,7 @@ def save_images(folder_path, angle_min, angle_increment, original_ranges, result
     stride_x = [x_coords[j] for j in range(length) if j % stride == 0]
     stride_y = [y_coords[j] for j in range(length) if j % stride == 0]
     stride_colors = ['red' if result_ranges[j] == float('inf') 
-                     else 'blue' for j in range(length) if j % stride == 0]
+                    else 'blue' for j in range(length) if j % stride == 0]
     
     non_stride_x = [x_coords[j] for j in range(length) if j % stride != 0]
     non_stride_y = [y_coords[j] for j in range(length) if j % stride != 0]
@@ -121,7 +121,7 @@ def compute_DBSCAN(msg, eps_ratio, stride, make_image):
 
     Angle, Distance = preprocess(angle_min, angle_increment, ranges, stride)
     trainDF = make_train_data(Angle, Distance)
-    
+
     # DBSCAN 클러스터링
     eps_value = np.percentile(trainDF['InterLeft'], eps_ratio)
     dbscan = DBSCAN(eps=eps_value, min_samples=5)

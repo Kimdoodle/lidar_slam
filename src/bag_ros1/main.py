@@ -11,7 +11,7 @@ src_path = os.path.abspath(os.path.join(file_path, '..', '..'))
 project_path = os.path.abspath(os.path.join(src_path, '..'))
 log_path = os.path.join(project_path, 'log')
 
-bagname = 'Team_Hector_MappingBox_RoboCup_2011_Rescue_Arena.bag'
+bagname = 'test.bag'
 bag_path = os.path.join(log_path, 'bag', bagname)
 
 
@@ -69,6 +69,6 @@ def calculate(eps_ratios, strides, make_output, make_static, make_image):
 
 
 if __name__ == '__main__':
-    eps_ratios = [10, 30, 50, 70, 90]
-    strides = [2, 4, 6, 8, 10]
-    calculate(eps_ratios, strides, make_output=True, make_static=True, make_image=True)
+    eps_ratios = [50]
+    strides = [2]
+    calculate(eps_ratios, strides, make_output=True, make_static=False, make_image=False)
