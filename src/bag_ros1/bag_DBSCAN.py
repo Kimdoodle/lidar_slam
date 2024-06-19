@@ -33,7 +33,8 @@ def calculate(eps_ratios, remains, make_output, make_static, make_image):
                 for topic, msg, t in rosbag.Bag(bag_path).read_messages():
                     if topic == '/scan':
                         count += 1
-                        print(f"Index {count-1} data completed.")
+                        if count % 100 == 0:
+                            print(f"Index {count-1} data completed.")
                         msg, time2, remove = compute_Cluster(msg, eps_ratio=EPS_RATIO, remains=REMAIN, make_image=make_image)
                         calTime += time2
                         removed += remove
@@ -65,6 +66,10 @@ def calculate(eps_ratios, remains, make_output, make_static, make_image):
 
 
 if __name__ == '__main__':
-    eps_ratios = [50]
-    remains = [2]
-    calculate(eps_ratios, remains, make_output=True, make_static=False, make_image=True)
+    eps_ratios = [50, 60, 70, 80, 90]
+    remains = [2, 4, 6, 8, 10]
+    calculate(eps_ratios=eps_ratios, 
+              remains=remains, 
+              make_output=False, 
+              make_static=True, 
+              make_image=True)

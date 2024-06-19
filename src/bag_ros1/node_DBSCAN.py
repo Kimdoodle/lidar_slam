@@ -6,6 +6,7 @@ import sys
 import rospy
 from sensor_msgs.msg import LaserScan
 from train import compute_DBSCAN
+from train2 import compute_Cluster
 
 processTime = 0.0
 removePoint = 0
@@ -13,7 +14,7 @@ count = 0
 
 def callback(data):
     global processTime, removePoint, count
-    modified_msg, processing_time, removed_count = compute_DBSCAN(data, 50, 2, False)
+    modified_msg, processing_time, removed_count = compute_Cluster(data, 50, 5, False)
     
     # 결과를 퍼블리시
     pub.publish(modified_msg)
