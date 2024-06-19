@@ -27,3 +27,4 @@ src/train/finalCSV/
 
 # ros package
 build/
+trash/
