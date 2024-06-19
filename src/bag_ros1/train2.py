@@ -4,7 +4,6 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.cluster import DBSCAN
 
 file_path = os.path.abspath(__file__)
 src_path = os.path.abspath(os.path.join(file_path, '..', '..'))
@@ -31,18 +30,11 @@ colors = [
 ]
 
 # 데이터 전처리
-def preprocess(angle_min, angle_increment, ranges, stride):
+def preprocess(angle_min, angle_increment, ranges):
     ranges = np.nan_to_num(ranges, nan=float('inf'))
-    angles = []
+    angles = [angle_min + i * angle_increment for i in range(len(ranges))]
 
-    current_angle = angle_min - angle_increment
-    for _ in range(len(ranges)):
-        current_angle += angle_increment
-        angles.append(current_angle)
-
-    distances2 = [value for index, value in enumerate(ranges) if index % stride == 0]
-    angles2 = [value for index, value in enumerate(angles) if index % stride == 0]
-    return angles2, distances2
+    return angles, ranges
 
 # 두 점 간 거리 계산
 def calculate_distance(angle1, angle2, distance1, distance2):
@@ -93,30 +85,23 @@ def make_train_data(angle, distance):
     return df
 
 # save images - various colors.
-def save_images(folder_path, angle_min, angle_increment, original_ranges, result_ranges, labels, stride):
+def save_images(folder_path, angle_min, angle_increment, original_ranges, result_ranges, labels):
     fig, ax = plt.subplots(figsize=(10, 10))
     
     length = len(result_ranges)
     angles = [angle_min + i * angle_increment for i in range(length)]
 
-    x_coords = [r * np.cos(a) for r, a in zip(original_ranges, angles) if r != float('inf')]
-    y_coords = [r * np.sin(a) for r, a in zip(original_ranges, angles) if r != float('inf')]
+    x_coords = [r * np.cos(a) for r, a in zip(original_ranges, angles)]
+    y_coords = [r * np.sin(a) for r, a in zip(original_ranges, angles)]
 
-    stride_x = []
-    stride_y = []
-    stride_colors = []
-    for j in range(length):
-        if j % stride == 0:
-            stride_x.append(x_coords[j])
-            stride_y.append(y_coords[j])
-            label = labels[j / stride]
-            stride_colors.append(colors[label])
-    
-    # non_stride_x = [x_coords[j] for j in range(length) if j % stride != 0]
-    # non_stride_y = [y_coords[j] for j in range(length) if j % stride != 0]
-    
-    # ax.scatter(non_stride_x, non_stride_y, c='black', s=7, label='excluded data')
-    ax.scatter(stride_x, stride_y, c=stride_colors, s=15, label='trained data')
+    scatter_colors = []
+    for label in labels:
+        if label == -1:
+            scatter_colors.append('red')
+        else:
+            scatter_colors.append(colors(label % 15))
+
+    ax.scatter(x_coords, y_coords, c=scatter_colors, s=15, label='trained data')
 
     ax.set_title('DBSCAN Result')
     ax.set_xlabel('X')
@@ -132,8 +117,8 @@ def save_images(folder_path, angle_min, angle_increment, original_ranges, result
     plt.savefig(image_file_path)
     plt.close()
 
-
-def compute_DBSCAN(msg, eps_ratio, stride, make_image):
+    
+def compute_Cluster(msg, eps_ratio, remains, make_image):
     start_time = time.time()
 
     angle_min = msg.angle_min
@@ -141,39 +126,53 @@ def compute_DBSCAN(msg, eps_ratio, stride, make_image):
     ranges = np.array(msg.ranges, dtype=np.float32)
     length = len(ranges)
 
-    Angle, Distance = preprocess(angle_min, angle_increment, ranges, stride)
+    Angle, Distance = preprocess(angle_min, angle_increment, ranges)
     trainDF = make_train_data(Angle, Distance)
 
-    # DBSCAN 클러스터링
-    eps_value = np.percentile(trainDF['InterLeft'], eps_ratio)
-    dbscan = DBSCAN(eps=eps_value, min_samples=5)
-    labels = dbscan.fit_predict(trainDF)
+    # make Clusters
+    threshold = np.percentile(trainDF['InterLeft'], eps_ratio)
+    labels = []
+    counts = [0]
+    current_label = 0
 
-    # 이상치 및 제거한 값들을 다시 추가
-    removed_count = 0
-    result_ranges = []
-    label_index = 0
+    for i in range(len(ranges) - 1):  # Adjust for the last element not having a next interleft
+        if trainDF['InterLeft'][i] > threshold:
+            current_label += 1
+            counts.append(0)
+        counts[-1] += 1
+        labels.append(current_label)
 
-    for i in range(length):
-        if i % stride == 0:
-            if labels[label_index] != -1:
-                result_ranges.append(ranges[i])
-            else:
-                result_ranges.append(float('inf'))
-                removed_count += 1
-            label_index += 1
-        else:
-            result_ranges.append(float('inf'))
+    # Append the label for the last element
+    labels.append(current_label)
+    
+    # Compare first and last clusters
+    if trainDF['InterLeft'][0] <= threshold:
+        # merge first and last cluster
+        counts[0] += counts[-1]
+        labels[-counts[-1]:] = [labels[0]] * counts[-1]
+        counts = counts[:-1]
+        labels = labels[:-counts[-1]]
+
+    # Remove except top {remains} clusters
+    if remains < len(counts):
+        top_clusters = np.argsort(counts)[-remains:]
+        top_labels = set(top_clusters)
+
+        # Update ranges and labels
+        for i, label in enumerate(labels):
+            if label not in top_labels:
+                labels[i] = -1
+                ranges[i] = float('inf')
 
     end_time = time.time() - start_time
 
     # 이미지 생성
     if make_image:
-        img_folder_path = os.path.join(log_path, 'image', f'{eps_ratio}_{stride}')
+        img_folder_path = os.path.join(log_path, 'image', f'{eps_ratio}_{threshold}')
         os.makedirs(img_folder_path, exist_ok=True)
-        save_images(img_folder_path, angle_min, angle_increment, msg.ranges, result_ranges, labels, stride)
+        save_images(img_folder_path, angle_min, angle_increment, msg.ranges, labels)
     
     # 결과 반영
-    msg.ranges = result_ranges
+    msg.ranges = ranges
 
-    return msg, end_time, removed_count
+    return msg, end_time

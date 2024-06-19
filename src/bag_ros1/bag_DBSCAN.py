@@ -1,9 +1,8 @@
 import os
-import time
 
 import pandas as pd
 import rosbag
-from train import compute_DBSCAN
+from train2 import compute_Cluster
 
 # Define paths
 file_path = os.path.abspath(__file__)
@@ -15,27 +14,27 @@ bagname = '2024-06-19-16-57-10.bag'
 bag_path = os.path.join(log_path, 'bag', bagname)
 
 
-def calculate(eps_ratios, strides, make_output, make_static, make_image):
+def calculate(eps_ratios, remains, make_output, make_static, make_image):
     # Results list
     results = []
 
     # Iterate over parameter combinations
     for EPS_RATIO in eps_ratios:
-        for STRIDE in strides:
-            bagname2 = f'compressed_{EPS_RATIO}_{STRIDE}.bag'
+        for REMAIN in remains:
+            bagname2 = f'compressed_{EPS_RATIO}_{REMAIN}.bag'
             bag_path2 = os.path.join(log_path, 'bag', bagname2)
             
             calTime = 0.
             removed = 0
             count = 0
 
-            print(f"\n EPS={EPS_RATIO}, STRIDE={STRIDE} start")
+            print(f"\n EPS={EPS_RATIO}, REMAIN={REMAIN} start")
             with rosbag.Bag(bag_path2, 'w') as outbag:
                 for topic, msg, t in rosbag.Bag(bag_path).read_messages():
                     if topic == '/scan':
                         count += 1
                         print(f"Index {count-1} data completed.")
-                        msg, time2, remove = compute_DBSCAN(msg, eps_ratio=EPS_RATIO, stride=STRIDE, make_image=make_image)
+                        msg, time2, remove = compute_Cluster(msg, eps_ratio=EPS_RATIO, remains=REMAIN, make_image=make_image)
                         calTime += time2
                         removed += remove
                     if make_output:
@@ -47,7 +46,7 @@ def calculate(eps_ratios, strides, make_output, make_static, make_image):
             
             results.append({
                 'EPS_RATIO': EPS_RATIO,
-                'STRIDE': STRIDE,
+                'REMAIN': REMAIN,
                 'total_scan_msg': count,
                 'total_removed': removed,
                 'average_removed_data': avg_removed,
@@ -67,5 +66,5 @@ def calculate(eps_ratios, strides, make_output, make_static, make_image):
 
 if __name__ == '__main__':
     eps_ratios = [50]
-    strides = [2]
-    calculate(eps_ratios, strides, make_output=True, make_static=False, make_image=True)
+    remains = [2]
+    calculate(eps_ratios, remains, make_output=True, make_static=False, make_image=True)
