@@ -26,5 +26,4 @@
     <param name="map_start_x" value="0.5"/>
     <param name="map_start_y" value="0.5"/>
   </node>
-  <param name="/use_sim_time" value="false"/>
 </launch>

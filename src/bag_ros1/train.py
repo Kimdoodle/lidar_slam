@@ -11,6 +11,25 @@ src_path = os.path.abspath(os.path.join(file_path, '..', '..'))
 project_path = os.path.abspath(os.path.join(src_path, '..'))
 log_path = os.path.join(project_path, 'log')
 
+# color
+colors = [
+    'blue',    # 'b'
+    'green',   # 'g'
+    'red',     # 'r'
+    'cyan',    # 'c'
+    'magenta', # 'm'
+    'yellow',  # 'y'
+    'black',   # 'k'
+    'orange',
+    'purple',
+    'brown',
+    'pink',
+    'gray',
+    'olive',
+    'navy',
+    'white'    # 'w'
+]
+
 # 데이터 전처리
 def preprocess(angle_min, angle_increment, ranges, stride):
     ranges = np.nan_to_num(ranges, nan=float('inf'))
@@ -74,25 +93,30 @@ def make_train_data(angle, distance):
     return df
 
 
-def save_images(folder_path, angle_min, angle_increment, original_ranges, result_ranges, stride):
+def save_images(folder_path, angle_min, angle_increment, original_ranges, result_ranges, labels, stride):
     fig, ax = plt.subplots(figsize=(10, 10))
-
+    
     length = len(result_ranges)
     angles = [angle_min + i * angle_increment for i in range(length)]
 
-    x_coords = [r * np.cos(a) for r, a in zip(original_ranges, angles)]
-    y_coords = [r * np.sin(a) for r, a in zip(original_ranges, angles)]
+    x_coords = [r * np.cos(a) for r, a in zip(original_ranges, angles) if r != float('inf')]
+    y_coords = [r * np.sin(a) for r, a in zip(original_ranges, angles) if r != float('inf')]
 
-    stride_x = [x_coords[j] for j in range(length) if j % stride == 0]
-    stride_y = [y_coords[j] for j in range(length) if j % stride == 0]
-    stride_colors = ['red' if result_ranges[j] == float('inf') 
-                    else 'blue' for j in range(length) if j % stride == 0]
+    stride_x = []
+    stride_y = []
+    stride_colors = []
+    for j in range(length):
+        if j % stride == 0:
+            stride_x.append(x_coords[j])
+            stride_y.append(y_coords[j])
+            label = labels[j / stride]
+            stride_colors.append(colors[label])
     
-    non_stride_x = [x_coords[j] for j in range(length) if j % stride != 0]
-    non_stride_y = [y_coords[j] for j in range(length) if j % stride != 0]
+    # non_stride_x = [x_coords[j] for j in range(length) if j % stride != 0]
+    # non_stride_y = [y_coords[j] for j in range(length) if j % stride != 0]
     
-    ax.scatter(non_stride_x, non_stride_y, c='black', s=7, label='excluded data')
-    ax.scatter(stride_x, stride_y, c=stride_colors, s=20, label='trained data')
+    # ax.scatter(non_stride_x, non_stride_y, c='black', s=7, label='excluded data')
+    ax.scatter(stride_x, stride_y, c=stride_colors, s=15, label='trained data')
 
     ax.set_title('DBSCAN Result')
     ax.set_xlabel('X')
@@ -107,7 +131,6 @@ def save_images(folder_path, angle_min, angle_increment, original_ranges, result
     
     plt.savefig(image_file_path)
     plt.close()
-
 
 
 
@@ -149,7 +172,7 @@ def compute_DBSCAN(msg, eps_ratio, stride, make_image):
     if make_image:
         img_folder_path = os.path.join(log_path, 'image', f'{eps_ratio}_{stride}')
         os.makedirs(img_folder_path, exist_ok=True)
-        save_images(img_folder_path, angle_min, angle_increment, msg.ranges, result_ranges, stride)
+        save_images(img_folder_path, angle_min, angle_increment, msg.ranges, result_ranges, labels, stride)
     
     # 결과 반영
     msg.ranges = result_ranges

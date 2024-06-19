@@ -11,7 +11,7 @@ src_path = os.path.abspath(os.path.join(file_path, '..', '..'))
 project_path = os.path.abspath(os.path.join(src_path, '..'))
 log_path = os.path.join(project_path, 'log')
 
-bagname = 'test.bag'
+bagname = '2024-06-19-16-57-10.bag'
 bag_path = os.path.join(log_path, 'bag', bagname)
 
 
@@ -34,11 +34,8 @@ def calculate(eps_ratios, strides, make_output, make_static, make_image):
                 for topic, msg, t in rosbag.Bag(bag_path).read_messages():
                     if topic == '/scan':
                         count += 1
-                        if count % 2000 == 1:
-                            print(f"Index {count-1} data completed.")
-                            msg, time2, remove = compute_DBSCAN(msg, eps_ratio=EPS_RATIO, stride=STRIDE, make_image=make_image)
-                        else:
-                            msg, time2, remove = compute_DBSCAN(msg, eps_ratio=EPS_RATIO, stride=STRIDE, make_image=False)
+                        print(f"Index {count-1} data completed.")
+                        msg, time2, remove = compute_DBSCAN(msg, eps_ratio=EPS_RATIO, stride=STRIDE, make_image=make_image)
                         calTime += time2
                         removed += remove
                     if make_output:
@@ -71,4 +68,4 @@ def calculate(eps_ratios, strides, make_output, make_static, make_image):
 if __name__ == '__main__':
     eps_ratios = [50]
     strides = [2]
-    calculate(eps_ratios, strides, make_output=True, make_static=False, make_image=False)
+    calculate(eps_ratios, strides, make_output=True, make_static=False, make_image=True)
