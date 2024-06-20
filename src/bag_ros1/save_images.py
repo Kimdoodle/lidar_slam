@@ -27,57 +27,46 @@ def save_images(folder_path, angle_min, angle_increment, original_ranges, result
     length = len(result_ranges)
     angles = [angle_min + i * angle_increment for i in range(length)]
 
-    x_coords = []
-    y_coords = []
-    xy_color = []
-    filtered_x_coords = []
-    filtered_y_coords = []
-    filtered_xy_color = []
-    noise_x_coords = []
-    noise_y_coords = []
-    noise_color = []
+    # 상위 클러스터
+    x_top = []
+    y_top = []
+    color_top = []
+
+    # 노이즈 데이터
+    x_noise = []
+    y_noise = []
 
     for i in range(length):
         x = result_ranges[i] * np.cos(angles[i])
         y = result_ranges[i] * np.sin(angles[i])
-        if labels[i] == -1:
-            if result_ranges[i] == float('inf'):
-                noise_x_coords.append(original_ranges[i] * np.cos(angles[i]))
-                noise_y_coords.append(original_ranges[i] * np.sin(angles[i]))
-                noise_color.append('red')
-            else:
-                noise_x_coords.append(x)
-                noise_y_coords.append(y)
-                noise_color.append('red')
-        else:
-            noise_x_coords.append(x)
-            noise_y_coords.append(y)
-            noise_color.append('black')
-            x_coords.append(x)
-            y_coords.append(y)
-            xy_color.append(colors[labels[i] % len(colors)])
-            filtered_x_coords.append(x)
-            filtered_y_coords.append(y)
-            filtered_xy_color.append(colors[labels[i] % len(colors)])
+        if labels[i] != -1: # valid
+            x_top.append(x)
+            y_top.append(y)
+            color_top.append(colors[labels[i] % len(colors)])
+        elif labels[i] == -1: # noise
+            x_noise.append(original_ranges[i] * np.cos(angles[i]))
+            y_noise.append(original_ranges[i] * np.sin(angles[i]))
 
-    # 왼쪽 subplot: 노이즈(red) 및 나머지(black) 데이터
-    ax1.scatter(noise_x_coords, noise_y_coords, c=noise_color, s=7)
-    ax1.scatter([0], [0], c='red', s=20)
-    ax1.set_title('DBSCAN Result with Noise Highlighted')
+    # 1번째: 노이즈(red), 나머지(black)
+    ax1.scatter(x_top, y_top, c='black', s=7)
+    ax1.scatter(x_noise, y_noise, c='red', s=7)
+    ax1.scatter([0], [0], c='black', s=30)
+    ax1.set_title('Cluster Result\nconfirmed data(black), noise data(red)')
     ax1.set_xlabel('X')
     ax1.set_ylabel('Y')
 
-    # 가운데 subplot: 전체 데이터 포함
-    ax2.scatter(x_coords, y_coords, c=xy_color, s=7)
-    ax2.scatter([0], [0], c='red', s=20)
-    ax2.set_title(f'DBSCAN Result with Noise, labels = {len(set(labels))}')
+    # 2번째: 노이즈(red), 나머지(color)
+    ax2.scatter(x_top, y_top, c=color_top, s=7)
+    ax2.scatter(x_noise, y_noise, c='red', s=7)
+    ax2.scatter([0], [0], c='black', s=30)
+    ax2.set_title('Cluster Result\nconfirmed data(diff.), noise data(red)')
     ax2.set_xlabel('X')
     ax2.set_ylabel('Y')
 
-    # 오른쪽 subplot: 노이즈 데이터 제외
-    ax3.scatter(filtered_x_coords, filtered_y_coords, c=filtered_xy_color, s=7)
-    ax3.scatter([0], [0], c='red', s=20)
-    ax3.set_title(f'DBSCAN Result without Noise, labels = {len(set(filtered_xy_color))}')
+    # 3번째: 나머지(color)
+    ax3.scatter(x_top, y_top, c=color_top, s=7)
+    ax3.scatter([0], [0], c='black', s=30)
+    ax3.set_title('Cluster Result\nonly confirmed data(diff.)')
     ax3.set_xlabel('X')
     ax3.set_ylabel('Y')
 
