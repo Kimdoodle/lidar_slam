@@ -7,9 +7,12 @@
 
   <node pkg="lidar_slam" type="node_DBSCAN.py" name="scan_modifier" output="screen">
     <param name="use_sim_time" value="false"/>
+    <!-- params for DBSCAN -->
+    <!-- no DBSCAN: eps_ratio=100, minpts=1, remains=1.0 -->
+     <!-- 5 15 0.5 -->
     <param name="eps_ratio" value="5"/>
-    <param name="minpts" value="20"/>
-    <param name="remains" value="0.4"/>
+    <param name="minpts" value="15"/>
+    <param name="remains" value="0.5"/>
   </node>
 
   <node pkg="hector_mapping" type="hector_mapping" name="hector_height_mapping" output="screen">
@@ -40,5 +43,8 @@
     <param name="map_start_x" value="0.5"/>
     <param name="map_start_y" value="0.5"/>
   </node>
-  <!-- <node pkg="tf" type="static_transform_publisher" name="base_to_laser_broadcaster" args="0 0 0 0 0 0 base_link laser 100"/> -->
+
+  <node pkg="lidar_slam" type="makeMap.py" name="map_saver" output="screen">
+    
+  </node>
 </launch>
