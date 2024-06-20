@@ -16,10 +16,13 @@ cluster = True
 def callback(data):
     global processTime, removePoint, count
     eps_ratio = rospy.get_param('~eps_ratio', 0.5)
+    minpts = rospy.get_param('~minpts', 10)
     remains = rospy.get_param('~remains', 5)
-    
+
+    print(f"eps_ratio: {eps_ratio}")
+    print(f"remains: {remains}")
     if cluster:
-        modified_msg, processing_time, removed_count = compute_DBSCAN(data, eps_ratio, remains, False)
+        modified_msg, processing_time, removed_count = compute_DBSCAN(data, eps_ratio, minpts, remains, False)
     else:
         modified_msg, processing_time, removed_count = data, 0.0, 0
     

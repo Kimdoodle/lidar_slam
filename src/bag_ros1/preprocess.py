@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+
 # 데이터 전처리
 def preprocess(angle_min, angle_increment, ranges):
     # ranges = np.nan_to_num(ranges, nan=float('inf'))
@@ -97,20 +98,20 @@ def make_train_data_DBSCAN2(angle, distance):
     for i in range(len(valid_indices)):
         x = x_coords[i]
         y = y_coords[i]
-        if i == len(valid_indices) - 1:
-            nextIndex = 0
-        else:
-            nextIndex = i + 1
-        next_x = x_coords[nextIndex]
-        next_y = y_coords[nextIndex]
+        # if i == len(valid_indices) - 1:
+        #     nextIndex = 0
+        # else:
+        #     nextIndex = i + 1
+        # next_x = x_coords[nextIndex]
+        # next_y = y_coords[nextIndex]
 
-        inter_distance = calculate_distance(x, y, next_x, next_y)
-        dist_difference = np.abs(distance[i] - distance[nextIndex])
+        # inter_distance = calculate_distance(x, y, next_x, next_y)
+        # dist_difference = np.abs(distance[i] - distance[nextIndex])
         rows.append({
             'X': x,
             'Y': y,
-            'InterInfo': inter_distance,
-            'DistInfo': dist_difference
+            # 'InterInfo': inter_distance,
+            # 'DistInfo': dist_difference
         })
 
     df = pd.DataFrame(rows)

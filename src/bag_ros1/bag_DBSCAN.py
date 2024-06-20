@@ -10,7 +10,7 @@ src_path = os.path.abspath(os.path.join(file_path, '..', '..'))
 project_path = os.path.abspath(os.path.join(src_path, '..'))
 log_path = os.path.join(project_path, 'log')
 
-bagname = '2024-06-19-20-09-21.bag'
+bagname = 'final3.bag'
 bag_path = os.path.join(log_path, 'bag', bagname)
 
 
@@ -33,7 +33,7 @@ def calculate(eps_ratios, remains, make_output, make_static, make_image):
                 for topic, msg, t in rosbag.Bag(bag_path).read_messages():
                     if topic == '/scan':
                         count += 1
-                        if count % 50 == 0:
+                        if count % 10 == 0:
                             print(f"Index {count} data completed.")
                             msg, time2, remove = compute_DBSCAN(msg, eps_ratio=EPS_RATIO, remains=REMAIN, make_image=make_image)
                         else:
@@ -71,8 +71,8 @@ def calculate(eps_ratios, remains, make_output, make_static, make_image):
 
 
 if __name__ == '__main__':
-    eps_ratios = [5]
-    remains = [0.5]
+    eps_ratios = [10, 30, 50, 70]
+    remains = [0.1, 0.3, 0.5, 0.7]
     calculate(eps_ratios=eps_ratios, 
               remains=remains, 
               make_output=False, 
