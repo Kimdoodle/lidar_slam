@@ -5,16 +5,18 @@
     <param name="use_sim_time" value="false"/>
   </node>
 
-  <!-- <node pkg="lidar_slam" type="node_DBSCAN.py" name="scan_modifier" output="screen">
+  <node pkg="lidar_slam" type="node_DBSCAN.py" name="scan_modifier" output="screen">
     <param name="use_sim_time" value="false"/>
-  </node> -->
+    <param name="eps_ratio" value="1"/>
+    <param name="remains" value="0.2"/>
+  </node>
 
   <node pkg="hector_mapping" type="hector_mapping" name="hector_height_mapping" output="screen">
     <!-- using interprocess -->
-    <!-- <param name="scan_topic" value="scan_modified" /> -->
+    <param name="scan_topic" value="scan_modified" />
     
     <!-- without interprocess -->
-    <param name="scan_topic" value="scan" />
+    <!-- <param name="scan_topic" value="scan" /> -->
 
     <param name="base_frame" value="base_link" />
     <param name="odom_frame" value="base_link" />
