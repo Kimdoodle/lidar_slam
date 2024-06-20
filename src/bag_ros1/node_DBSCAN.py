@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import signal
 import sys
@@ -6,7 +6,6 @@ import sys
 import rospy
 from sensor_msgs.msg import LaserScan
 from train import compute_DBSCAN
-from train2 import compute_Cluster
 
 processTime = 0.0
 removePoint = 0
@@ -17,7 +16,7 @@ cluster = True
 def callback(data):
     global processTime, removePoint, count
     if cluster:
-        modified_msg, processing_time, removed_count = compute_Cluster(data, 50, 5, False)
+        modified_msg, processing_time, removed_count = compute_DBSCAN(data, 5, 0.5, False)
     else:
         modified_msg, processing_time, removed_count = data, 0.0, 0
     
@@ -63,6 +62,4 @@ def listener():
     rospy.spin()
 
 if __name__ == '__main__':
-    global cluster
-    cluster = False
     listener()
