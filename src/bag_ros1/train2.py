@@ -1,9 +1,9 @@
 import os
 import time
 
-from save_images import save_images
 import numpy as np
-import pandas as pd
+from save_images import save_images
+from preprocess import preprocess, make_train_data
 
 file_path = os.path.abspath(__file__)
 src_path = os.path.abspath(os.path.join(file_path, '..', '..'))
@@ -11,44 +11,7 @@ project_path = os.path.abspath(os.path.join(src_path, '..'))
 log_path = os.path.join(project_path, 'log')
 
 
-# 데이터 전처리
-def preprocess(angle_min, angle_increment, ranges):
-    ranges = np.nan_to_num(ranges, nan=float('inf'))
-    angles = [angle_min + i * angle_increment for i in range(len(ranges))]
-
-    return angles, ranges
-
-
-# 두 점 간 거리 계산
-def calculate_distance(angle1, angle2, distance1, distance2):
-    theta_diff = np.arctan2(np.sin(angle1 - angle2), np.cos(angle1 - angle2))
-    return np.sqrt(distance1**2 + distance2**2 - 2 * distance1 * distance2 * np.cos(theta_diff))
-
-
-# 학습 데이터 생성
-def make_train_data(angle, distance):
-    assert len(angle) == len(distance)
-    length = len(angle)
-    interleft = []
-    removed = []
-
-    # float('inf')인 데이터는 따로 보관
-    valid_indices = [i for i in range(length) if distance[i] != float('inf')]
-    angle = [angle[i] for i in valid_indices]
-    distance = [distance[i] for i in valid_indices]
-
-    for i in range(length):
-        current = i
-        before = (i-1) % length
-        interleft.append(calculate_distance(angle[current], angle[before],
-                                            distance[current], distance[before]))
-
-    removed = [i for i in range(len(distance)) if distance[i] == float('inf')]
-
-    return interleft, removed
-
-
-# 클러스터 계산
+# 단순 클러스터링
 def compute_Cluster(msg, eps_ratio, remains, make_image):
     start_time = time.time()
 
@@ -83,15 +46,16 @@ def compute_Cluster(msg, eps_ratio, remains, make_image):
         labels[valid_indices[-counts[-1]:]] = labels[valid_indices[0]]
         counts = counts[:-1]
 
-    # 상위 {remains}개의 클러스터만 남김
-    if remains < len(counts):
-        top_clusters = np.argsort(counts)[-remains:]
-        top_labels = set(top_clusters)
+    # 상위 {remains} 비율의 클러스터만 남김
+    total_clusters = len(counts)
+    clusters_to_keep = max(1, int(total_clusters * remains))
+    top_clusters = np.argsort(counts)[-clusters_to_keep:]
+    top_labels = set(top_clusters)  
 
-        # 결과 반영
-        for i in valid_indices:
-            if labels[i] not in top_labels:
-                labels[i] = -1
+    # 결과 반영
+    for i in valid_indices:
+        if labels[i] not in top_labels:
+            labels[i] = -1
 
     # label이 -1인 데이터의 값을 float('inf')로 처리
     for i in range(len(labels)):

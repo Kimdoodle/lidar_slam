@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 import rosbag
-from train2 import compute_Cluster
+from train import compute_DBSCAN
 
 # Define paths
 file_path = os.path.abspath(__file__)
@@ -10,7 +10,7 @@ src_path = os.path.abspath(os.path.join(file_path, '..', '..'))
 project_path = os.path.abspath(os.path.join(src_path, '..'))
 log_path = os.path.join(project_path, 'log')
 
-bagname = '2024-06-19-16-57-10.bag'
+bagname = '2024-06-19-20-09-21.bag'
 bag_path = os.path.join(log_path, 'bag', bagname)
 
 
@@ -33,13 +33,18 @@ def calculate(eps_ratios, remains, make_output, make_static, make_image):
                 for topic, msg, t in rosbag.Bag(bag_path).read_messages():
                     if topic == '/scan':
                         count += 1
-                        if count % 100 == 0:
-                            print(f"Index {count-1} data completed.")
-                        msg, time2, remove = compute_Cluster(msg, eps_ratio=EPS_RATIO, remains=REMAIN, make_image=make_image)
+                        if count % 50 == 0:
+                            print(f"Index {count} data completed.")
+                            msg, time2, remove = compute_DBSCAN(msg, eps_ratio=EPS_RATIO, remains=REMAIN, make_image=make_image)
+                        else:
+                            msg, time2, remove = compute_DBSCAN(msg, eps_ratio=EPS_RATIO, remains=REMAIN, make_image=False)
                         calTime += time2
                         removed += remove
                     if make_output:
                         outbag.write(topic, msg, t)
+                        
+            if make_output == False:
+                os.remove(bag_path2)
             
             # Collect results
             avg_removed = removed / count if count != 0 else 0
@@ -66,8 +71,8 @@ def calculate(eps_ratios, remains, make_output, make_static, make_image):
 
 
 if __name__ == '__main__':
-    eps_ratios = [50, 60, 70, 80, 90]
-    remains = [2, 4, 6, 8, 10]
+    eps_ratios = [5]
+    remains = [0.5]
     calculate(eps_ratios=eps_ratios, 
               remains=remains, 
               make_output=False, 

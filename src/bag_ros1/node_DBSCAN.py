@@ -12,9 +12,14 @@ processTime = 0.0
 removePoint = 0
 count = 0
 
+cluster = True
+
 def callback(data):
     global processTime, removePoint, count
-    modified_msg, processing_time, removed_count = compute_Cluster(data, 50, 5, False)
+    if cluster:
+        modified_msg, processing_time, removed_count = compute_Cluster(data, 50, 5, False)
+    else:
+        modified_msg, processing_time, removed_count = data, 0.0, 0
     
     # 결과를 퍼블리시
     pub.publish(modified_msg)
@@ -58,4 +63,6 @@ def listener():
     rospy.spin()
 
 if __name__ == '__main__':
+    global cluster
+    cluster = False
     listener()
