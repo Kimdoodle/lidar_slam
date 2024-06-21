@@ -44,7 +44,8 @@
     <param name="map_start_y" value="0.5"/>
   </node>
 
-  <node pkg="lidar_slam" type="makeMap.py" name="map_saver" output="screen">
-    
-  </node>
+  <!-- <node pkg="lidar_slam" type="makeMap.py" name="map_saver" output="screen">
+    <param name="no_change_duration" value="3"/>
+    <param name="output_file" value="p.pgm"/>
+  </node> -->
 </launch>

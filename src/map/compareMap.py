@@ -1,8 +1,9 @@
 import os
+
+import cv2
 import numpy as np
 import pandas as pd
 from skimage.metrics import structural_similarity as ssim
-import cv2
 
 # 경로 설정
 file_path = os.path.abspath(__file__)
@@ -12,23 +13,28 @@ log_path = os.path.join(project_path, 'log')
 map_path = os.path.join(log_path, 'map')
 
 # PGM 파일 리스트
-pgm_files = [os.path.join(map_path, f'final_p{i}.pgm') for i in range(1, 6)]
+pgm_files = [os.path.join(map_path, f'np{i}.pgm') for i in range(1, 6)]
 
 def read_custom_pgm(file_path):
-    with open(file_path, 'r') as f:
-        lines = f.readlines()
-    # 데이터만 추출 (공백을 기준으로 분리)
-    data = []
-    for line in lines:
-        data.extend([int(x) for x in line.split()])
-    # OccupancyGrid와 동일한 변환
-    width = int(np.sqrt(len(data)))  # 정사각형 형태 가정
-    height = width
-    image_data = np.array(data).reshape((height, width))
-    image_data = np.where(image_data == -1, 205, image_data)  # unknown -> 205 (중간 값)
-    image_data = np.where(image_data == 0, 255, image_data)   # free -> 255 (white)
-    image_data = np.where(image_data == 100, 0, image_data)  # occupied -> 0 (black)
-    return image_data.astype(np.uint8)
+    with open(file_path, 'rb') as f:
+        header = f.readline().decode().strip()
+        if header != 'P5':
+            raise ValueError("Not a binary PGM file")
+        
+        # Read the rest of the header
+        dimensions = f.readline().decode().strip()
+        width, height = map(int, dimensions.split())
+        max_value = int(f.readline().decode().strip())
+
+        # Read the binary image data
+        image_data = np.frombuffer(f.read(), dtype=np.uint8).reshape((height, width))
+        
+        # OccupancyGrid와 동일한 변환 (-1: unknown, 0: free, 100: occupied)
+        image_data = np.where(image_data == 205, -1, image_data)  # 중간 값 -> unknown
+        image_data = np.where(image_data == 255, 0, image_data)   # white -> free
+        image_data = np.where(image_data == 0, 100, image_data)   # black -> occupied
+
+        return image_data.astype(np.uint8)
 
 # MSE 계산 함수
 def calculate_mse(imageA, imageB):
@@ -85,14 +91,12 @@ for i in range(len(images)):
             'SSIM': ssim_value
         })
 
-
 # 결과 출력
 for result in results:
     print(f"Comparing {result['File1']} and {result['File2']}:")
     print(f"  MSE: {result['MSE']}")
     print(f"  PSNR: {result['PSNR']}")
     print(f"  SSIM: {result['SSIM']}\n")
-
 
 # 결과를 데이터프레임으로 저장
 df = pd.DataFrame(results)
