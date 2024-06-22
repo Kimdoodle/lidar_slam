@@ -48,7 +48,7 @@ roslaunch lidar_slam hector_only.launch
 ```
 
 ### Parameters
-Change params in /launch/hectormapping.launch
+Change params in `/launch/hectormapping.launch`
 ```xml
 <param name="eps_ratio" value="5"/>
 <param name="minpts" value="15"/>
